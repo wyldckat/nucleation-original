@@ -12,17 +12,17 @@
 #-----------------------TODOS--------------------------------------
 # 1 - Remake the interface using dialog < mark TODOS >
 # 2 - Add packages to apt-get for building OpenFOAM's gcc and code documentation
-# 3 - Add Qt 4.3.5 building, especially for Ubuntu 8.04 LTS - Qt also has problems in 10.04 LTS!!!
+# 3 - Add Qt 4.3.5 building, especially for Ubuntu 8.04 LTS - also has problems in 10.04!!
 # 4 - Add building Paraview, with or without python
 # 5 - add option to build OpenFOAM's gcc, but also will need patching of 3 missing files
 # 6 - Multi-language support, since this script has only been tested in Ubuntu's standard english
 # ps: Do you believe that is really necessary that?? English is standard. Nós dois falamos português
 # por exemplo, e trocamos até mesmo emails em inglês, acredito que somente inglês é melhor para o projeto
-#-----------------------TODOS--------------------------------------
+
 
 # >>> DEFAULT SETTINGS <<< ---------------------------------------------------------
 
-#TODO - Path to Install OpenFOAM
+#TODO! - Path to Install OpenFOAM
 #PATHOF=~/OpenFOAM
 
 #Take care in dialogs with default settings already applied
@@ -47,119 +47,12 @@
 # >>> END OF DEFAULT SETTINGS <<< ----------------------------------------------------
 #--------------------------------------------------------------
 #Code ---------------------------------------------------------
+#Detect architeture and ubuntu version
 set -e
 arch=`uname -m`
 version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$1/g`
 #make dialog avaliable to use as "GUI", making sudo avaliable also
 sudo apt-get install -q=2 dialog
-#Presentation dialog
-dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
-		--msgbox '--------------------------------------------------------------------\n' \
-		 '| =========                 |                                               |\n' \
-		 '| \\      /  F ield         | OpenFOAM-1.6.x Installer for Ubuntu           |\n' \
-		 '|  \\    /   O peration     | Licensed under GPLv3                          |\n' \
-		 '|   \\  /    A nd           | Web: http://code.google.com/p/openfoam-ubuntu |\n' \
-		 '|    \\/     M anipulation  | By: Fabio Canesin, Bruno Santos and Mads Reck |\n' \
-		 '------------------------------------------------------------------------' 40 20
-#Settings dialog section
-#Major settings loop dialog
-go=settingswelcome
-while : ; do
-
-    # Define the screen to be show.
-    # Update in each screen the variable $goback and $go, the control navegation
-    case "$go" in
-        settingswelcome)
-            go=LOG_OUTPUTS
-            dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - http://code.google.com/p/openfoam-ubuntu" \
-                --msgbox 'Welcome, we will start by choosing the settins for the script!' 0 0
-            ;;
-#TODO!
-#        PATHOF)
-#            goback=settingswelcome
-#            go=LOG_OUTPUTS
-#            PATHOF=$(dialog --stdout \
-#                --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
-#TODO! - Enable variable PATHOF in the rest of the code
-#                --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 0 0)
-#            ;;
-        LOG_OUTPUTS)
-            goback=settingswelcome
-            go=INSTALLMODE
-            LOG_OUTPUTS=$(dialog --stdout \
-                --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-                --menu 'Do you want to save a log of the script? < default: Yes >' 0 0 0 \
-                'Yes'   '' \
-                'No' '' )
-            ;;
-        INSTALLMODE)
-            goback=LOG_OUTPUTS
-            go=SETTINGSOPTS
-            INSTALLMODE=$(dialog --stdout \
-                --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
-                --radiolist 'Choose the Install Mode: < default: fresh >' 0 0 0 \
-                'fresh' 'Make new Install' on  \
-                'update'    'Re-make from git repository'   off \
-#TODO! - The script generates a second script called installOF$DATE that performes silent installs
-                'robot'   'Create automated installer - TODO!!!'           off \
-#TODO! - Build Paraview without GUI and with MPI support 
-                'server'    'Paraview with: -GUI +MPI - TODO!!!'    off )
-            ;;
-        SETTINGSOPTS)
-            goback=INSTALLMODE
-            go=FINAL
-            SETTINGSOPTS=$(dialog --stdout \
-					--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-					--checklist "Choose Install settings: < defaults come marked >" 13 60 6 \
-			  		1 "Do apt-get upgrade"  'on_off $DOUPGRADE 0' \
-			  		2 "Fix tutorials"       'on_off $FIXTUTORIALS 1' \
-			  		3 "Build OpenFOAM docs" 'on_off $BUILD_DOCUMENTATION 0' \
-			  		4 "Use startFoam alias"     'on_off $USE_ALIAS_FOR_BASHRC 1' \
-			  		5 "Use OpenFOAM gcc compiler" 'on_off $USE_OF_GCC 1' 2>$TEMP )
-			# Take care of <Cancel> and <Esc>
-			  if [ "$?" != "0" ] ; then return ; fi
-			  DOUPGRADE=0 ; FIXTUTORIALS=1 ; BUILD_DOCUMENTATION=0
-			  USE_ALIAS_FOR_BASHRC=1 ; USE_OF_GCC=1
-			  choice='cat $TEMP'
-			  for setting in $choice
-			  do
-			    case $setting in
-			      \"1\") DOUPGRADE=0;;
-			      \"2\") FIXTUTORIALS=0;;
-			      \"3\") BUILD_DOCUMENTATION=0;;
-			      \"4\") USE_ALIAS_FOR_BASHRC=0;;
-			      \"5\") USE_OF_GCC=0;;
-			    esac
-			  done
-            ;;
-        FINAL)
-            dialog \
-                --cr-wrap \
-                --sleep 5 \
-                --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-                --title 'Install settings are:	< return > to continue < esc > to Exit Installer' \
-                --infobox "
-                Log : $LOG_OUTPUTS
-                Install mode: $INSTALLMODE
-                Options: \n$SETTINGSOPTS
-                " 14 40
-            break
-            ;;
-        *)
-            break
-    esac
-
-    # Go back to previus screen if press Cancel, Exit the Installer if press Esc.
-    returncode=$?
-    [ $returncode -eq 1   ] && go=$goback   # Cancel
-    [ $returncode -eq 255 ] && exit               # Esc
-
-done
-
-#Enable this script's logging functionality ...
-if [ "$LOG_OUTPUTS" == "Yes" ]; then
-  exec 2>&1 > >(tee -a $LOG_OUTPUTS_LOGFILE)
-fi
 
 #FUNCTIONS SECTION ---------------------------------------------------------
 function patchBashrcMultiCore()
@@ -262,28 +155,123 @@ function calcestimate()
 #END FUNCTIONS SECTION ---------------------------------------------------------
 
 
-
 #INTERACTIVE SECTION  ----------------------------------
-if  [ "$INSTALLMODE" != "robot" ]; then
-dialog --stdout               \
-	   --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-	   --title 'Mirror selector:'  \
-	   --menu 'What is your Geographical location ? (if not in list, chose closest)' \
-	   0 0 0                   \
-	   1 'Brazil' \
-	   2 'US'  \
-	   3 'Germany'     \
-	   4 'Switzerlande'        \
-	   5 'Japan' \
-	   6 'Australia'  \
-	   7 'UK'     \
-	   8 'Italy'        \
-	   9 'China/Taiwan'  \
-	   10 'Autodetect closest mirror'     \
-	   0 'EXIT INSTALLER'                )
+#Presentation dialog
+dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
+		--msgbox "-------------------------------------------------------------------------\n
+| =========               |                                               |\n
+| \\      /  F ield        | OpenFOAM-1.6.x Installer for Ubuntu           |\n
+|  \\    /   O peration    | Licensed under GPLv3                          |\n
+|   \\  /    A nd          | Web: http://code.google.com/p/openfoam-ubuntu |\n
+|    \\/     M anipulation | By: Fabio Canesin, Bruno Santos and Mads Reck |\n -------------------------------------------------------------------------" 0 0
+#Settings dialog section
+#Major settings loop dialog
+go=LOG_OUTPUTS
+while : ; do
 
-	    # Handle <Esc> of <Cancel> as break --> Use default findClosest
-	    [ $? -ne 0 ] && break
+    # Define the screen to be show.
+    # Update in each screen the variable $goback and $go, the control navegation
+    case "$go" in
+#TODO!
+#        PATHOF)
+#            goback=settingswelcome
+#            go=LOG_OUTPUTS
+#            PATHOF=$(dialog --stdout \
+#                --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+#TODO! - Enable variable PATHOF in the rest of the code
+#                --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 0 0)
+#            ;;
+LOG_OUTPUTS)
+go=INSTALLMODE
+LOG_OUTPUTS=$(dialog --stdout \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+--menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
+'Yes'   '' \
+'No' '' )
+;;
+INSTALLMODE)
+goback=LOG_OUTPUTS
+go=SETTINGSOPTS
+INSTALLMODE=$(dialog --stdout \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
+--radiolist 'Choose the Install Mode: < default: fresh >' 0 0 0 \
+'fresh' 'Make new Install' on  \
+'update'    'Re-make from git repository - TODO!!'   off \
+'robot'   'Create automated installer - TODO!!!'           off \
+'server'    'Paraview with: -GUI +MPI - TODO!!!'    off )
+;;
+SETTINGSOPTS)
+goback=INSTALLMODE
+go=FINAL
+SETTINGSOPTS=$(dialog --stdout \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+--checklist "Choose Install settings: < Space to select ! >" 13 50 6 \
+1 "Do apt-get upgrade"  'on_off $DOUPGRADE 0' \
+2 "Fix tutorials"       'on_off $FIXTUTORIALS 1' \
+3 "Build OpenFOAM docs" 'on_off $BUILD_DOCUMENTATION 0' \
+4 "Use startFoam alias"     'on_off $USE_ALIAS_FOR_BASHRC 1' \
+5 "Use OpenFOAM gcc compiler" 'on_off $USE_OF_GCC 1'  )
+# Take care of <Cancel> and <Esc>
+if [ "$?" != "0" ] ; then return ; fi
+DOUPGRADE=0 ; FIXTUTORIALS=1 ; BUILD_DOCUMENTATION=0
+USE_ALIAS_FOR_BASHRC=1 ; USE_OF_GCC=1
+choice='cat $SETTINGSOPTS'
+for setting in $choice
+do
+case $setting in
+\"1\") DOUPGRADE=0;;
+\"2\") FIXTUTORIALS=0;;
+\"3\") BUILD_DOCUMENTATION=0;;
+\"4\") USE_ALIAS_FOR_BASHRC=0;;
+\"5\") USE_OF_GCC=0;;
+esac
+done
+;;
+FINAL)
+dialog \
+--cr-wrap \
+--sleep 6 \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+--title 'Install settings are: < 1-Yes 0-No >' \
+--infobox "Log : $LOG_OUTPUTS\n \
+Install mode: $INSTALLMODE\n \
+Run apt-get upgrade ? $DOUPGRADE\n \
+Fix tutorials ? $FIXTUTORIALS\n \
+Build documentation ? $BUILD_DOCUMENTATION\n \
+Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n \
+Use OpenFOAM gcc ? $USE_OF_GCC\n
+" 0 0
+break
+;;
+*)
+break
+esac
+# Go back to previus screen if press Cancel, Exit the Installer if press Esc.
+returncode=$?
+[ $returncode -eq 1   ] && go=$goback   # Cancel
+[ $returncode -eq 255 ] && exit               # Esc
+done
+#Enable this script's logging functionality ...
+if [ "$LOG_OUTPUTS" == "Yes" ]; then
+  exec 2>&1 > >(tee -a $LOG_OUTPUTS_LOGFILE)
+fi
+if  [ "$INSTALLMODE" != "robot" ]; then
+dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+--menu 'What is your Geographical location ? (if not in list, chose closest)' 0 0 0\
+1 'Brazil' '' \
+2 'US'  ''\
+3 'Germany' ''     \
+4 'Switzerlande'  ''      \
+5 'Japan' ''\
+6 'Australia' ''  \
+7 'UK'     ''\
+8 'Italy'    ''    \
+9 'China/Taiwan' '' \
+10 'Autodetect closest mirror'    '' \
+0 'EXIT INSTALLER' ''
+
+# Handle <Esc> of <Cancel> as break --> Use default findClosest
+[ $? -ne 0 ] && break
 # Set mirror based on user selection
 case "$?" in
 	1) mirror=ufpr;;
@@ -298,8 +286,8 @@ case "$?" in
 	10) mirror=findClosest;;
 	0) exit;;
 esac
-
 fi
+
 #END OF INTERACTIVE SECTION  ----------------------------------
 
 if [ "$mirror" == "findClosest" ]; then
