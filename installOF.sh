@@ -45,10 +45,8 @@
 #Use OpenFOAM's gcc: 1 | 0 (on|off)
 #USE_OF_GCC=1
 # >>> END OF DEFAULT SETTINGS <<< ----------------------------------------------------
-
 #--------------------------------------------------------------
 #Code ---------------------------------------------------------
-
 set -e
 arch=`uname -m`
 version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$1/g`
@@ -62,7 +60,7 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 		 '|  \\    /   O peration     | Licensed under GPLv3                          |\n' \
 		 '|   \\  /    A nd           | Web: http://code.google.com/p/openfoam-ubuntu |\n' \
 		 '|    \\/     M anipulation  | By: Fabio Canesin, Bruno Santos and Mads Reck |\n' \
-		 '------------------------------------------------------------------------" 40 20'
+		 '------------------------------------------------------------------------' 40 20
 #Settings dialog section
 #Major settings loop dialog
 go=PATHOF
