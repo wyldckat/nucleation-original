@@ -167,7 +167,7 @@ fi
 function patchBashrcMultiCore()
 {
 tmpVar=$PWD
-cd ~OpenFOAM/OpenFOAM-1.6.x/etc/
+cd ~/OpenFOAM/OpenFOAM-1.6.x/etc/
 
 echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
 +++ bashrc  2009-11-21 00:01:20.814519578 +0000
@@ -200,7 +200,7 @@ unset tmpVar
 function patchBashrcTo32()
 {
 tmpVar=$PWD
-cd ~OpenFOAM/OpenFOAM-1.6.x/etc/
+cd ~/OpenFOAM/OpenFOAM-1.6.x/etc/
 
 echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
 +++ bashrc  2009-11-21 00:01:20.814519578 +0000
@@ -221,7 +221,7 @@ unset tmpVar
 function patchSettingsToSystemCompiler()
 {
 tmpVar=$PWD
-cd ~OpenFOAM/OpenFOAM-1.6.x/etc/
+cd ~/OpenFOAM/OpenFOAM-1.6.x/etc/
 
 echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
 +++ settings.sh 2009-11-21 00:01:59.157391716 +0000
@@ -353,7 +353,7 @@ echo "--Installing dependencies ----------------------------"
 echo "------------------------------------------------------"
 
 sudo apt-get update -y -q=2
-if [ "$DOUPGRADE" == "on" ]; then sudo apt-get upgrade -y -q=2; fi
+if [ "$DOUPGRADE" == "1" ]; then sudo apt-get upgrade -y -q=2; fi
 sudo apt-get install -y -q=2 binutils-dev flex git git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
 #for Ubuntu 8.04, a few more packages are needed
 isleftlarger_or_equal 8.10 $version
@@ -378,7 +378,7 @@ if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
 echo "------------------------------------------------------"
 
 #apply fix, only if it isn't to use the system's compiler
-if [ "$version" == "9.10" -a "$USE_OF_GCC" == "on" ]; then
+if [ "$version" == "9.10" -a "$USE_OF_GCC" == "1" ]; then
   echo "-----------------------------------------------------"
   echo "Fixing library links"
   cd $LIBRARY_PATH_TO_FIX
@@ -403,7 +403,7 @@ echo "Applying patches to bashrc and settings.sh ..."
 echo "------------------------------------------------------"
 patchBashrcMultiCore #for faster builds on multi-core machines
 if [ x`echo $arch | grep -e "i.86"` != "x" ]; then patchBashrcTo32; fi         #proper fix for running in 32bit
-if [ "$USE_OF_GCC" == "off" ]; then patchSettingsToSystemCompiler; fi #for using the system's compiler
+if [ "$USE_OF_GCC" == "0" ]; then patchSettingsToSystemCompiler; fi #for using the system's compiler
 
 echo "------------------------------------------------------"
 echo "Activate OpenFOAM environment and add entry in ~/.bashrc"
@@ -415,7 +415,7 @@ cd OpenFOAM-1.6.x/
 cat ~/.bashrc | grep -v 'OpenFOAM/OpenFOAM-1.6.x/etc/bashrc' > ~/.bashrc.new
 cp ~/.bashrc ~/.bashrc.old
 mv ~/.bashrc.new ~/.bashrc
-if [ "$USE_ALIAS_FOR_BASHRC" == "on" ]; then
+if [ "$USE_ALIAS_FOR_BASHRC" == "1" ]; then
   echo -e "alias startFoam=\". ~/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
 else
   echo . ~/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc >> ~/.bashrc
@@ -436,7 +436,7 @@ echo "Checking installation - you should see NO criticals..."
 echo "------------------------------------------------------"
 foamInstallationTest
 
-if [ "$FIXTUTORIALS" == "on" ]; then
+if [ "$FIXTUTORIALS" == "1" ]; then
   echo "------------------------------------------------------"
   echo "Fixing call for bash in tutorials (default is dash in Ubuntu)"
   for file in `find ~/OpenFOAM/OpenFOAM-1.6.x/tutorials/ -name All*`; do
