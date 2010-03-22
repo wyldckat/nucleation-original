@@ -63,7 +63,7 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 		 '------------------------------------------------------------------------' 40 20
 #Settings dialog section
 #Major settings loop dialog
-go=PATHOF
+go=settingswelcome
 while : ; do
 
     # Define the screen to be show.
