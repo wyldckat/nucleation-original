@@ -230,7 +230,7 @@ done
 FINAL)
 dialog \
 --cr-wrap \
---sleep 6 \
+--sleep 4 \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --title 'Install settings are: < 1-Yes 0-No >' \
 --infobox "Log : $LOG_OUTPUTS\n \
@@ -240,7 +240,7 @@ Fix tutorials ? $FIXTUTORIALS\n \
 Build documentation ? $BUILD_DOCUMENTATION\n \
 Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n \
 Use OpenFOAM gcc ? $USE_OF_GCC\n
-" 0 0
+" 9 50
 break
 ;;
 *)
@@ -255,38 +255,19 @@ done
 if [ "$LOG_OUTPUTS" == "Yes" ]; then
   exec 2>&1 > >(tee -a $LOG_OUTPUTS_LOGFILE)
 fi
-if  [ "$INSTALLMODE" != "robot" ]; then
-dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
---menu 'What is your Geographical location ? (if not in list, chose closest)' 0 0 0\
-1 'Brazil' '' \
-2 'US'  ''\
-3 'Germany' ''     \
-4 'Switzerlande'  ''      \
-5 'Japan' ''\
-6 'Australia' ''  \
-7 'UK'     ''\
-8 'Italy'    ''    \
-9 'China/Taiwan' '' \
-10 'Autodetect closest mirror'    '' \
-0 'EXIT INSTALLER' ''
-
-# Handle <Esc> of <Cancel> as break --> Use default findClosest
-[ $? -ne 0 ] && break
-# Set mirror based on user selection
-case "$?" in
-	1) mirror=ufpr;;
-	2) mirror=internap;;
-	3) mirror=mesh;;
-	4) mirror=puzzle;;
-	5) mirror=jaist;;
-	6) mirror=optusnet;;
-	7) mirror=kent;;
-	8) mirror=garr;;
-	9) mirror=nchc;;
-	10) mirror=findClosest;;
-	0) exit;;
-esac
-fi
+mirror=$(dialog --stdout \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+--menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
+ufpr 'Brazil' \
+internap 'US' \
+mesh 'Germany' \
+puzzle 'Switzerlande' \
+jaist 'Japan' \
+optusnet 'Australia' \
+kent 'UK' \
+garr 'Italy' \
+nchc 'China/Taiwan' \
+findClosest 'Autodetect closest' )
 
 #END OF INTERACTIVE SECTION  ----------------------------------
 
