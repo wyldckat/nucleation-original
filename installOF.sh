@@ -161,7 +161,6 @@ INSTALLMODE=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
 --radiolist 'Choose the Install Mode: < default: fresh >' 0 0 0 \
 'fresh' 'Make new Install' on  \
-'update'    'Re-make from git repository - TODO!!'   off \
 'robot'   'Create automated installer - TODO!!!'           off \
 'server'    'Paraview with: -GUI +MPI - TODO!!!'    off )
 
@@ -196,15 +195,15 @@ mirror=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
 findClosest 'Autodetect closest' \
-ufpr 'Brazil' \
-internap 'US' \
-mesh 'Germany' \
-puzzle 'Switzerlande' \
-jaist 'Japan' \
 optusnet 'Australia' \
-kent 'UK' \
+ufpr 'Brazil' \
+nchc 'China/Taiwan' \
+mesh 'Germany' \
 garr 'Italy' \
-nchc 'China/Taiwan' )
+jaist 'Japan' \
+puzzle 'Switzerlande' \
+kent 'UK' \
+internap 'US' )
 
 #Detect and take care of fastest mirror
 if [ "$mirror" == "findClosest" ]; then
@@ -235,6 +234,7 @@ fi
 #END OF INTERACTIVE SECTION  ----------------------------------
 
 clear
+
 #Show to user the detected settings, last chance to cancel the installer
 dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
 --title "Final settings - <ESC> to abort the Installer" \
@@ -293,17 +293,18 @@ cd OpenFOAM
 #Download Thidparty files
 if [ ! -e "$THIRDPARTY_GENERAL" ]; then 
 	urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_GENERAL?use_mirror=$mirror
-    wget $urladr > tempwget1.log &
+    wget $urladr
 fi
 if [ ! -e "$THIRDPARTY_BIN" ]; then 
 	urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_BIN?use_mirror=$mirror
-	wget $urladr > tempwget2.log &
+    wget $urladr
 fi
-fi
+echo "------------------------------------------------------"
+echo "Untar files"
 tar xfz $THIRDPARTY_GENERAL
 if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
 echo "------------------------------------------------------"
-exit
+
 #apply fix, only if it isn't to use the system's compiler
 if [ "$version" == "9.10" -a "$USE_OF_GCC" == "Yes" ]; then
   echo "-----------------------------------------------------"
@@ -355,6 +356,7 @@ echo "Compiling OpenFOAM...output is in make.log"
 echo "THIS CAN TAKE HOURS..."
 echo "Estimated time it will take: $estimated_timed minutes."
 echo "Total time that it did take will be shown upon completion."
+echo "Started at: `date`"
 echo "------------------------------------------------------"
 time ./Allwmake $BUILD_DOCUMENTATION >make.log 2>&1
 
