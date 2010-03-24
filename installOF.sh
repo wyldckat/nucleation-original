@@ -189,7 +189,7 @@ INSTALLMODE=$(dialog --stdout \
 
 SETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
---checklist "Choose Install settings: < Space to select ! >" 0 0 5 \
+--checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
 1 "Do apt-get upgrade" off \
 2 "Fix tutorials" on \
 3 "Build OpenFOAM docs" off \
@@ -198,7 +198,8 @@ SETTINGSOPTS=$(dialog --stdout --separate-output \
 
 # Take care of <Cancel> and <Esc>
 if [ "$?" != "0" ] ; then exit ; fi
-
+DOUPGRADE=0 ; FIXTUTORIALS=0 ; BUILD_DOCUMENTATION=0
+USE_ALIAS_FOR_BASHRC=0 ; USE_OF_GCC=0
 for setting in $SETTINGSOPTS ; do
 if [ $setting == 1 ] ; then DOUPGRADE=1 ; fi
 if [ $setting == 2 ] ; then FIXTUTORIALS=1 ; fi
@@ -225,6 +226,7 @@ fi
 mirror=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
+findClosest 'Autodetect closest' \
 ufpr 'Brazil' \
 internap 'US' \
 mesh 'Germany' \
@@ -233,31 +235,32 @@ jaist 'Japan' \
 optusnet 'Australia' \
 kent 'UK' \
 garr 'Italy' \
-nchc 'China/Taiwan' \
-findClosest 'Autodetect closest' )
+nchc 'China/Taiwan' )
 
 #END OF INTERACTIVE SECTION  ----------------------------------
 
 if [ "$mirror" == "findClosest" ]; then
-  echo "------------------------------------------------------"
-  echo "Searching for the closest sourceforge mirror..."
+(echo "Searching for the closest mirror..."
   echo "It can take from 10s to 90s (estimated)..."
-  echo "------------------------------------------------------"
+  echo "--------------------"
   best_time=9999
-  #US mirror by default, in case the cycle breaks...
-  mirror=internap
   for mirror_tmp in ufpr internap mesh puzzle jaist optusnet kent garr nchc; do
     timednow=`ping -Aqc 5 -s 120 $mirror_tmp.dl.sourceforge.net | sed -nr 's/.*time\ ([0-9]+)ms.*/\1/p'`
     echo "$mirror_tmp: $timednow ms"
     if [ $timednow -lt $best_time ]; then
-      mirror=$mirror_tmp
+      mirrorf=$mirror_tmp
       best_time=$timednow
     fi
   done
-  echo "--- Mirror picked: $mirror"
-  echo "------------------------------------------------------"
+  echo "*---Mirror picked: $mirrorf" ) > temp.log &
+mirror=
+while [ "$mirror" == "" ] ; do
+mirror=`grep "picked:" temp.log | cut -c20-`
+dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+--title "Mirror selector" \
+--infobox "`cat temp.log`" 15 50
+done
 fi
-exit
 #defining packages to download
 THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
 if [ "$arch" == "x86_64" ]; then
@@ -277,7 +280,6 @@ if [ "$version" == "9.10" ]; then
     LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
   fi
 fi
-dialog 
 echo "------------------------------------------------------"
 echo " Your system appears to be "$arch" Acting accordingly "
 echo "------------------------------------------------------"
