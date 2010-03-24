@@ -8,7 +8,7 @@
 # See script home at:
 # http://code.google.com/p/openfoam-ubuntu
 #
-# Several key people have contributed for this project.
+# Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
 # 1 - Remake the interface using dialog < mark TODOS >
 # 2 - Add packages to apt-get for building OpenFOAM's gcc and code documentation
@@ -16,41 +16,15 @@
 # 4 - Add building Paraview, with or without python
 # 5 - add option to build OpenFOAM's gcc, but also will need patching of 3 missing files
 # 6 - Multi-language support, since this script has only been tested in Ubuntu's standard english
-# ps: Do you believe that is really necessary that?? English is standard. Nós dois falamos português
-# por exemplo, e trocamos até mesmo emails em inglês, acredito que somente inglês é melhor para o projeto
+# ps: Do you believe that is really necessary that?? English is standard.
 
-
-# >>> DEFAULT SETTINGS <<< ---------------------------------------------------------
-
-#TODO! - Path to Install OpenFOAM
-#PATHOF=~/OpenFOAM
-
-#Take care in dialogs with default settings already applied
-
-#Mode of installation, provite at least: fresh, update, server, robot.
-#INSTALLMODE=fresh
-#make log options: Yes No
-#LOG_OUTPUTS=Yes
-#LOG_OUTPUTS_LOGFILE="installOF.log"
-#valid mirrors: ufpr internap mesh puzzle jaist optusnet kent garr nchc findClosest
-#mirror=findClosest
-#valid upgrade options: 1 | 0 (on|off)
-#DOUPGRADE=0
-#fix tutorials: 1 | 0 (on|off)
-#FIXTUTORIALS=1
-#TODO! - lso build code documentation for OpenFOAM: 1 | 0 (on|off)
-#BUILD_DOCUMENTATION=0
-#Use alias startFoam for on demand environment settings instead: 1 | 0 (on|off)
-#USE_ALIAS_FOR_BASHRC=1
-#Use OpenFOAM's gcc: 1 | 0 (on|off)
-#USE_OF_GCC=1
-# >>> END OF DEFAULT SETTINGS <<< ----------------------------------------------------
-#--------------------------------------------------------------
 #Code ---------------------------------------------------------
+
 #Detect architeture and ubuntu version
 set -e
 arch=`uname -m`
 version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$1/g`
+
 #make dialog avaliable to use as "GUI", making sudo avaliable also
 sudo apt-get install -q=2 dialog
 
@@ -163,22 +137,26 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 | \\      /  F ield        | OpenFOAM-1.6.x Installer for Ubuntu           |\n
 |  \\    /   O peration    | Licensed under GPLv3                          |\n
 |   \\  /    A nd          | Web: http://code.google.com/p/openfoam-ubuntu |\n
-|    \\/     M anipulation | By: Fabio Canesin, Bruno Santos and Mads Reck |\n 
--------------------------------------------------------------------------" 0 0
+|    \\/     M anipulation | By: Fabio Canesin and Bruno Santos            |\n
+|                         | Based on orginial work from Mads Reck         |\n
+-------------------------------------------------------------------------" 12 80
 #
 #TODO!
+#Make possible to user choose the path of installation
 #PATHOF=$(dialog --stdout \
 #--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
 #TODO! - Enable variable PATHOF in the rest of the code
 #--inputbox 'Choose the install path: < default: ~/OpenFOAM >' 0 0)
 # 
 
+#Loging option Dialog
 LOG_OUTPUTS=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
 'Yes'   '' \
 'No' '' )
 
+#Installating mode dialog
 INSTALLMODE=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
 --radiolist 'Choose the Install Mode: < default: fresh >' 0 0 0 \
@@ -187,6 +165,7 @@ INSTALLMODE=$(dialog --stdout \
 'robot'   'Create automated installer - TODO!!!'           off \
 'server'    'Paraview with: -GUI +MPI - TODO!!!'    off )
 
+#Settings choosing Dialog
 SETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
 --checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
@@ -196,33 +175,23 @@ SETTINGSOPTS=$(dialog --stdout --separate-output \
 4 "Use startFoam alias" on \
 5 "Use OpenFOAM gcc compiler" on )
 
-# Take care of <Cancel> and <Esc>
-if [ "$?" != "0" ] ; then exit ; fi
-DOUPGRADE=0 ; FIXTUTORIALS=0 ; BUILD_DOCUMENTATION=0
-USE_ALIAS_FOR_BASHRC=0 ; USE_OF_GCC=0
+#Take care of unpack settings from SETTINGSOPTS
+DOUPGRADE=No ; FIXTUTORIALS=No ; BUILD_DOCUMENTATION=
+USE_ALIAS_FOR_BASHRC=No ; USE_OF_GCC=No
 for setting in $SETTINGSOPTS ; do
-if [ $setting == 1 ] ; then DOUPGRADE=1 ; fi
-if [ $setting == 2 ] ; then FIXTUTORIALS=1 ; fi
-if [ $setting == 3 ] ; then BUILD_DOCUMENTATION=1 ; fi
-if [ $setting == 4 ] ; then USE_ALIAS_FOR_BASHRC=1 ; fi
-if [ $setting == 5 ] ; then USE_OF_GCC=1 ; fi
+if [ $setting == 1 ] ; then DOUPGRADE=Yes ; fi
+if [ $setting == 2 ] ; then FIXTUTORIALS=Yes ; fi
+if [ $setting == 3 ] ; then BUILD_DOCUMENTATION=doc ; fi
+if [ $setting == 4 ] ; then USE_ALIAS_FOR_BASHRC=Yes ; fi
+if [ $setting == 5 ] ; then USE_OF_GCC=Yes ; fi
 done
-
-dialog --sleep 4 \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
---title 'Install settings are: < 1-Yes 0-No >' \
---infobox "Log : $LOG_OUTPUTS\n \
-Install mode: $INSTALLMODE\n \
-Run apt-get upgrade ? $DOUPGRADE\n \
-Fix tutorials ? $FIXTUTORIALS\n \
-Build documentation ? $BUILD_DOCUMENTATION\n \
-Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n \
-Use OpenFOAM gcc ? $USE_OF_GCC\n" 9 50
 
 #Enable this script's logging functionality ...
 if [ "$LOG_OUTPUTS" == "Yes" ]; then
   exec 2>&1 > >(tee -a $LOG_OUTPUTS_LOGFILE)
 fi
+
+#Mirror selection dialog
 mirror=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
@@ -237,11 +206,12 @@ kent 'UK' \
 garr 'Italy' \
 nchc 'China/Taiwan' )
 
-#END OF INTERACTIVE SECTION  ----------------------------------
-
+#Detect and take care of fastest mirror
 if [ "$mirror" == "findClosest" ]; then
 (echo "Searching for the closest mirror..."
   echo "It can take from 10s to 90s (estimated)..."
+  echo "--------------------"
+  echo "It can provide fake closest!"
   echo "--------------------"
   best_time=9999
   for mirror_tmp in ufpr internap mesh puzzle jaist optusnet kent garr nchc; do
@@ -252,16 +222,36 @@ if [ "$mirror" == "findClosest" ]; then
       best_time=$timednow
     fi
   done
-  echo "*---Mirror picked: $mirrorf" ) > temp.log &
+  echo "*---Mirror picked: $mirrorf" ) > tempmirror.log &
 mirror=
 while [ "$mirror" == "" ] ; do
-mirror=`grep "picked:" temp.log | cut -c20-`
+mirror=`grep "picked:" tempmirror.log | cut -c20-`
 dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --title "Mirror selector" \
---infobox "`cat temp.log`" 15 50
+--infobox "`cat tempmirror.log`" 17 50
 done
+rm -rf tempmirror.log
 fi
-#defining packages to download
+#END OF INTERACTIVE SECTION  ----------------------------------
+
+clear
+#Show to user the detected settings, last chance to cancel the installer
+dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+--title "Final settings - <ESC> to abort the Installer" \
+--msgbox "-------------------------------------------------------------------------\n
+| =========   Detected thath you are running: Ubuntu $version - $arch\n
+| \\      /    The choosed mirror is: $mirror\n
+|  \\    /     Loging: $LOG_OUTPUTS\n
+|   \\  /      Install mode: $INSTALLMODE\n
+|    \\/       Run apt-get upgrade ? $DOUPGRADE\n
+|             Fix tutorials ? $FIXTUTORIALS\n
+| *installOF* Build documentation ? $BUILD_DOCUMENTATION\n
+| *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
+|             Use OpenFOAM gcc ? $USE_OF_GCC\n
+-------------------------------------------------------------------------\n
+!For more info see documentation on code.google.com/p/openfoam-ubuntu" 16 80
+
+#Defining packages to download
 THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
 if [ "$arch" == "x86_64" ]; then
   THIRDPARTY_BIN="ThirdParty-1.6.linux64Gcc.gtgz"
@@ -272,7 +262,7 @@ else
   exit
 fi
 
-#define which folder to fix libraries
+#Define which folder to fix libraries
 if [ "$version" == "9.10" ]; then
   if [ "$arch" == "x86_64" ]; then
     LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64"
@@ -280,17 +270,11 @@ if [ "$version" == "9.10" ]; then
     LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
   fi
 fi
-echo "------------------------------------------------------"
-echo " Your system appears to be "$arch" Acting accordingly "
-echo "------------------------------------------------------"
-echo "Making sure that you have all needed libraries"
-echo "------------------------------------------------------"
-echo "--Installing dependencies ----------------------------"
-echo "------------------------------------------------------"
 
 sudo apt-get update -y -q=2
-if [ "$DOUPGRADE" == "1" ]; then sudo apt-get upgrade -y -q=2; fi
+if [ "$DOUPGRADE" == "Yes" ]; then sudo apt-get upgrade -y -q=2; fi
 sudo apt-get install -y -q=2 binutils-dev flex git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
+
 #for Ubuntu 8.04, a few more packages are needed
 isleftlarger_or_equal 8.10 $version
 if [ x"$?" == x"1" ]; then
@@ -300,6 +284,7 @@ cd ~
 if [ ! -d "OpenFOAM" ]; then mkdir OpenFOAM; fi
 cd OpenFOAM
 
+#Download Thidparty files
 if [ ! -e "$THIRDPARTY_GENERAL" ]; then 
 	urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_GENERAL?use_mirror=$mirror
 	wget $urladr 2>&1 | sed -u `s/.*\ \([0-9]\+%\)\ \+\([0-9.]\+\ [KMB\/s]\+\)$/\1\n# Downloading \2/` | dialog --title="Downloading $THIRDPARTY_GENERAL" --gauge 10 40 0
@@ -314,7 +299,7 @@ if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
 echo "------------------------------------------------------"
 
 #apply fix, only if it isn't to use the system's compiler
-if [ "$version" == "9.10" -a "$USE_OF_GCC" == "1" ]; then
+if [ "$version" == "9.10" -a "$USE_OF_GCC" == "Yes" ]; then
   echo "-----------------------------------------------------"
   echo "Fixing library links"
   cd $LIBRARY_PATH_TO_FIX
@@ -333,12 +318,12 @@ echo "------------------------------------------------------"
 ln -s  ~/OpenFOAM/ThirdParty-1.6 ~/OpenFOAM/ThirdParty-1.6.x
 git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
 
-#apply patches
+#Apply patches
 echo "------------------------------------------------------"
 echo "Applying patches to bashrc and settings.sh ..."
 echo "------------------------------------------------------"
 patchBashrcMultiCore #for faster builds on multi-core machines
-if [ x`echo $arch | grep -e "i.86"` != "x" ]; then patchBashrcTo32; fi         #proper fix for running in 32bit
+if [ x`echo $arch | grep -e "i.86"` != "x" ]; then patchBashrcTo32; fi #proper fix for running in 32bit
 if [ "$USE_OF_GCC" == "0" ]; then patchSettingsToSystemCompiler; fi #for using the system's compiler
 
 echo "------------------------------------------------------"
@@ -351,7 +336,7 @@ cd OpenFOAM-1.6.x/
 cat ~/.bashrc | grep -v 'OpenFOAM/OpenFOAM-1.6.x/etc/bashrc' > ~/.bashrc.new
 cp ~/.bashrc ~/.bashrc.old
 mv ~/.bashrc.new ~/.bashrc
-if [ "$USE_ALIAS_FOR_BASHRC" == "1" ]; then
+if [ "$USE_ALIAS_FOR_BASHRC" == "Yes" ]; then
   echo -e "alias startFoam=\". ~/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
 else
   echo . ~/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc >> ~/.bashrc
@@ -372,7 +357,7 @@ echo "Checking installation - you should see NO criticals..."
 echo "------------------------------------------------------"
 foamInstallationTest
 
-if [ "$FIXTUTORIALS" == "1" ]; then
+if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "------------------------------------------------------"
   echo "Fixing call for bash in tutorials (default is dash in Ubuntu)"
   for file in `find ~/OpenFOAM/OpenFOAM-1.6.x/tutorials/ -name All*`; do
