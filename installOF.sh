@@ -158,40 +158,27 @@ function calcestimate()
 #INTERACTIVE SECTION  ----------------------------------
 #Presentation dialog
 dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
-		--msgbox "-------------------------------------------------------------------------\n
+--msgbox "-------------------------------------------------------------------------\n
 | =========               |                                               |\n
 | \\      /  F ield        | OpenFOAM-1.6.x Installer for Ubuntu           |\n
 |  \\    /   O peration    | Licensed under GPLv3                          |\n
 |   \\  /    A nd          | Web: http://code.google.com/p/openfoam-ubuntu |\n
-|    \\/     M anipulation | By: Fabio Canesin, Bruno Santos and Mads Reck |\n -------------------------------------------------------------------------" 0 0
-#Settings dialog section
-#Major settings loop dialog
-go=LOG_OUTPUTS
-while : ; do
-
-    # Define the screen to be show.
-    # Update in each screen the variable $goback and $go, the control navegation
-    case "$go" in
+|    \\/     M anipulation | By: Fabio Canesin, Bruno Santos and Mads Reck |\n 
+-------------------------------------------------------------------------" 0 0
+#
 #TODO!
-#        PATHOF)
-#            goback=settingswelcome
-#            go=LOG_OUTPUTS
-#            PATHOF=$(dialog --stdout \
-#                --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+#PATHOF=$(dialog --stdout \
+#--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
 #TODO! - Enable variable PATHOF in the rest of the code
-#                --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 0 0)
-#            ;;
-LOG_OUTPUTS)
-go=INSTALLMODE
+#--inputbox 'Choose the install path: < default: ~/OpenFOAM >' 0 0)
+# 
+
 LOG_OUTPUTS=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
 'Yes'   '' \
 'No' '' )
-;;
-INSTALLMODE)
-goback=LOG_OUTPUTS
-go=SETTINGSOPTS
+
 INSTALLMODE=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
 --radiolist 'Choose the Install Mode: < default: fresh >' 0 0 0 \
@@ -199,10 +186,7 @@ INSTALLMODE=$(dialog --stdout \
 'update'    'Re-make from git repository - TODO!!'   off \
 'robot'   'Create automated installer - TODO!!!'           off \
 'server'    'Paraview with: -GUI +MPI - TODO!!!'    off )
-;;
-SETTINGSOPTS)
-goback=INSTALLMODE
-go=FINAL
+
 SETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
 --checklist "Choose Install settings: < Space to select ! >" 0 0 5 \
@@ -211,8 +195,10 @@ SETTINGSOPTS=$(dialog --stdout --separate-output \
 3 "Build OpenFOAM docs" off \
 4 "Use startFoam alias" on \
 5 "Use OpenFOAM gcc compiler" on )
+
 # Take care of <Cancel> and <Esc>
 if [ "$?" != "0" ] ; then exit ; fi
+
 for setting in $SETTINGSOPTS ; do
 if [ $setting == 1 ] ; then DOUPGRADE=1 ; fi
 if [ $setting == 2 ] ; then FIXTUTORIALS=1 ; fi
@@ -220,11 +206,8 @@ if [ $setting == 3 ] ; then BUILD_DOCUMENTATION=1 ; fi
 if [ $setting == 4 ] ; then USE_ALIAS_FOR_BASHRC=1 ; fi
 if [ $setting == 5 ] ; then USE_OF_GCC=1 ; fi
 done
-;;
-FINAL)
-dialog \
---cr-wrap \
---sleep 4 \
+
+dialog --sleep 4 \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --title 'Install settings are: < 1-Yes 0-No >' \
 --infobox "Log : $LOG_OUTPUTS\n \
@@ -233,18 +216,8 @@ Run apt-get upgrade ? $DOUPGRADE\n \
 Fix tutorials ? $FIXTUTORIALS\n \
 Build documentation ? $BUILD_DOCUMENTATION\n \
 Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n \
-Use OpenFOAM gcc ? $USE_OF_GCC\n
-" 9 50
-break
-;;
-*)
-break
-esac
-# Go back to previus screen if press Cancel, Exit the Installer if press Esc.
-returncode=$?
-[ $returncode -eq 1   ] && go=$goback   # Cancel
-[ $returncode -eq 255 ] && exit               # Esc
-done
+Use OpenFOAM gcc ? $USE_OF_GCC\n" 9 50
+
 #Enable this script's logging functionality ...
 if [ "$LOG_OUTPUTS" == "Yes" ]; then
   exec 2>&1 > >(tee -a $LOG_OUTPUTS_LOGFILE)
