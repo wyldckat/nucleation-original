@@ -286,13 +286,6 @@ if [ x"$?" == x"1" ]; then
   sudo apt-get install -y -q=2 curl
 fi 
 
-control=
-while [ "$control" == "" ]; do
-mirror=`grep "FINISHEDUPDATE" tempupdate.log`
-dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
---title "Mirror selector" \
---infobox "`cat temp.log`" 17 50
-done
 cd ~
 if [ ! -d "OpenFOAM" ]; then mkdir OpenFOAM; fi
 cd OpenFOAM
@@ -300,17 +293,17 @@ cd OpenFOAM
 #Download Thidparty files
 if [ ! -e "$THIRDPARTY_GENERAL" ]; then 
 	urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_GENERAL?use_mirror=$mirror
-	wget $urladr 2>&1 | sed -u `s/.*\ \([0-9]\+%\)\ \+\([0-9.]\+\ [KMB\/s]\+\)$/\1\n# Downloading \2/` | dialog --title="Downloading $THIRDPARTY_GENERAL" --gauge 10 40 0
+    wget $urladr > tempwget1.log &
 fi
 if [ ! -e "$THIRDPARTY_BIN" ]; then 
 	urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_BIN?use_mirror=$mirror
-	wget $urladr 2>&1 | sed -u `s/.*\ \([0-9]\+%\)\ \+\([0-9.]\+\ [KMB\/s]\+\)$/\1\n# Downloading \2/` | dialog --title="Downloading $THIRDPARTY_BIN" --gauge 10 40 0
+	wget $urladr > tempwget2.log &
 fi
 fi
 tar xfz $THIRDPARTY_GENERAL
 if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
 echo "------------------------------------------------------"
-
+exit
 #apply fix, only if it isn't to use the system's compiler
 if [ "$version" == "9.10" -a "$USE_OF_GCC" == "Yes" ]; then
   echo "-----------------------------------------------------"
