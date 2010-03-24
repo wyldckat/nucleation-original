@@ -188,7 +188,7 @@ done
 
 #Enable this script's logging functionality ...
 if [ "$LOG_OUTPUTS" == "Yes" ]; then
-  exec 2>&1 > >(tee -a $LOG_OUTPUTS_LOGFILE)
+  exec 2>&1 > >(tee -a installOF.log)
 fi
 
 #Mirror selection dialog
@@ -272,7 +272,16 @@ if [ "$version" == "9.10" ]; then
 fi
 
 sudo apt-get update -y -q=2
-if [ "$DOUPGRADE" == "Yes" ]; then sudo apt-get upgrade -y -q=2; fi
+if [ "$DOUPGRADE" == "Yes" ]; then
+sudo apt-get upgrade -y > tempupgrade.log &
+while [ "$control" != "ldconfig deferred processing now taking place" ] ; do
+control=`grep "ldconfig deferred processing" tempupgrade.log`
+dialog --sleep 5 \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+--infobox "You have choose to do Upgrade on all packtes on your computer, please wait"
+done
+rm -rf tempupgrade.log
+fi
 sudo apt-get install -y -q=2 binutils-dev flex git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
 
 #for Ubuntu 8.04, a few more packages are needed
