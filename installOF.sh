@@ -264,16 +264,16 @@ else
 fi
 
 #Define which folder to fix libraries
-if [ "$version" == "9.10" ]; then
+if [ "$version" != "8.04" ]; then
   if [ "$arch" == "x86_64" ]; then
     LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64"
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
     LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
   fi
 fi
-echo "-------------------------------------------"
-echo " Updating and downloading "
-echo "-------------------------------------------"
+
+#Do update and if choosed upgrade
+
 sudo apt-get update -y -q=1
 if [ "$DOUPGRADE" == "Yes" ]; then
 sudo apt-get upgrade -y
@@ -284,7 +284,15 @@ sudo apt-get install -y -q=1 binutils-dev flex git-core build-essential python-d
 isleftlarger_or_equal 8.10 $version
 if [ x"$?" == x"1" ]; then
   sudo apt-get install -y -q=2 curl
-fi
+fi 
+
+control=
+while [ "$control" == "" ]; do
+mirror=`grep "FINISHEDUPDATE" tempupdate.log`
+dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+--title "Mirror selector" \
+--infobox "`cat temp.log`" 17 50
+done
 cd ~
 if [ ! -d "OpenFOAM" ]; then mkdir OpenFOAM; fi
 cd OpenFOAM
