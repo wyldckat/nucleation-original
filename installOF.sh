@@ -250,6 +250,7 @@ dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/open
 |             Use OpenFOAM gcc ? $USE_OF_GCC\n
 -------------------------------------------------------------------------\n
 !For more info see documentation on code.google.com/p/openfoam-ubuntu" 16 80
+clear
 
 #Defining packages to download
 THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
@@ -270,19 +271,14 @@ if [ "$version" == "9.10" ]; then
     LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
   fi
 fi
-
-sudo apt-get update -y -q=2
+echo "-------------------------------------------"
+echo " Updating and downloading "
+echo "-------------------------------------------"
+sudo apt-get update -y -q=1
 if [ "$DOUPGRADE" == "Yes" ]; then
-sudo apt-get upgrade -y > tempupgrade.log &
-while [ "$control" != "ldconfig deferred processing now taking place" ] ; do
-control=`grep "ldconfig deferred processing" tempupgrade.log`
-dialog --sleep 5 \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
---infobox "You have choose to do Upgrade on all packtes on your computer, please wait"
-done
-rm -rf tempupgrade.log
+sudo apt-get upgrade -y
 fi
-sudo apt-get install -y -q=2 binutils-dev flex git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
+sudo apt-get install -y -q=1 binutils-dev flex git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
 
 #for Ubuntu 8.04, a few more packages are needed
 isleftlarger_or_equal 8.10 $version
