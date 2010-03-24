@@ -203,28 +203,22 @@ INSTALLMODE=$(dialog --stdout \
 SETTINGSOPTS)
 goback=INSTALLMODE
 go=FINAL
-SETTINGSOPTS=$(dialog --stdout \
+SETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
---checklist "Choose Install settings: < Space to select ! >" 13 50 6 \
-1 "Do apt-get upgrade"  'on_off $DOUPGRADE 0' \
-2 "Fix tutorials"       'on_off $FIXTUTORIALS 1' \
-3 "Build OpenFOAM docs" 'on_off $BUILD_DOCUMENTATION 0' \
-4 "Use startFoam alias"     'on_off $USE_ALIAS_FOR_BASHRC 1' \
-5 "Use OpenFOAM gcc compiler" 'on_off $USE_OF_GCC 1'  )
+--checklist "Choose Install settings: < Space to select ! >" 0 0 5 \
+1 "Do apt-get upgrade" off \
+2 "Fix tutorials" on \
+3 "Build OpenFOAM docs" off \
+4 "Use startFoam alias" on \
+5 "Use OpenFOAM gcc compiler" on )
 # Take care of <Cancel> and <Esc>
-if [ "$?" != "0" ] ; then return ; fi
-DOUPGRADE=0 ; FIXTUTORIALS=1 ; BUILD_DOCUMENTATION=0
-USE_ALIAS_FOR_BASHRC=1 ; USE_OF_GCC=1
-choice='cat $SETTINGSOPTS'
-for setting in $choice
-do
-case $setting in
-\"1\") DOUPGRADE=0;;
-\"2\") FIXTUTORIALS=0;;
-\"3\") BUILD_DOCUMENTATION=0;;
-\"4\") USE_ALIAS_FOR_BASHRC=0;;
-\"5\") USE_OF_GCC=0;;
-esac
+if [ "$?" != "0" ] ; then exit ; fi
+for setting in $SETTINGSOPTS ; do
+if [ $setting == 1 ] ; then DOUPGRADE=1 ; fi
+if [ $setting == 2 ] ; then FIXTUTORIALS=1 ; fi
+if [ $setting == 3 ] ; then BUILD_DOCUMENTATION=1 ; fi
+if [ $setting == 4 ] ; then USE_ALIAS_FOR_BASHRC=1 ; fi
+if [ $setting == 5 ] ; then USE_OF_GCC=1 ; fi
 done
 ;;
 FINAL)
@@ -276,7 +270,7 @@ if [ "$mirror" == "findClosest" ]; then
   echo "Searching for the closest sourceforge mirror..."
   echo "It can take from 10s to 90s (estimated)..."
   echo "------------------------------------------------------"
-  best_time=9999999
+  best_time=9999
   #US mirror by default, in case the cycle breaks...
   mirror=internap
   for mirror_tmp in ufpr internap mesh puzzle jaist optusnet kent garr nchc; do
@@ -290,7 +284,7 @@ if [ "$mirror" == "findClosest" ]; then
   echo "--- Mirror picked: $mirror"
   echo "------------------------------------------------------"
 fi
-
+exit
 #defining packages to download
 THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
 if [ "$arch" == "x86_64" ]; then
@@ -321,7 +315,7 @@ echo "------------------------------------------------------"
 
 sudo apt-get update -y -q=2
 if [ "$DOUPGRADE" == "1" ]; then sudo apt-get upgrade -y -q=2; fi
-sudo apt-get install -y -q=2 binutils-dev flex git git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
+sudo apt-get install -y -q=2 binutils-dev flex git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake
 #for Ubuntu 8.04, a few more packages are needed
 isleftlarger_or_equal 8.10 $version
 if [ x"$?" == x"1" ]; then
