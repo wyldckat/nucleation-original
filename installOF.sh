@@ -305,9 +305,9 @@ fi
 #define which folder to fix libraries
 if [ "$version" == "9.10" ]; then
   if [ "$arch" == "x86_64" ]; then
-    LIBRARY_PATH_TO_FIX="~OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64"
+    LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64"
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-    LIBRARY_PATH_TO_FIX="~OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
+    LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
   fi
 fi
 dialog 
