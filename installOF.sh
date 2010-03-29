@@ -266,9 +266,9 @@ fi
 #Define which folder to fix libraries
 if [ "$version" != "8.04" ]; then
   if [ "$arch" == "x86_64" ]; then
-    LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64"
+    LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64/"
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-    LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib"
+    LIBRARY_PATH_TO_FIX="~/OpenFOAM/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib/"
   fi
 fi
 
@@ -310,7 +310,7 @@ isleftlarger_or_equal $version 9.10
 if [ x"$?" == x"1" -a "$USE_OF_GCC" == "Yes" ]; then
   echo "-----------------------------------------------------"
   echo "Fixing library links"
-  cd $LIBRARY_PATH_TO_FIX
+  cd `echo $LIBRARY_PATH_TO_FIX`
   mv libstdc++.so.6 libstdc++.so.6.orig
   ln -s `locate libstdc++.so.6.0 | grep "^/usr/lib" | head -n 1` libstdc++.so.6
   mv libgcc_s.so.1 libgcc_s.so.1.orig
