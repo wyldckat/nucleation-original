@@ -306,7 +306,8 @@ if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
 echo "------------------------------------------------------"
 
 #apply fix, only if it isn't to use the system's compiler
-if [ "$version" == "9.10" -a "$USE_OF_GCC" == "Yes" ]; then
+isleftlarger_or_equal $version 9.10
+if [ x"$?" == x"1" -a "$USE_OF_GCC" == "Yes" ]; then
   echo "-----------------------------------------------------"
   echo "Fixing library links"
   cd $LIBRARY_PATH_TO_FIX
