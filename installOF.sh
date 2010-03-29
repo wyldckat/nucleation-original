@@ -365,7 +365,11 @@ echo "------------------------------------------------------"
 echo "Checking installation - you should see NO criticals..."
 echo "------------------------------------------------------"
 foamInstallationTest
+set +e
 
+#Still don't know why but need to run the fix multiple times to work
+set -e
+for i in "1" "2"; do
 if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "------------------------------------------------------"
   echo "Fixing call for bash in tutorials (default is dash in Ubuntu)"
@@ -377,5 +381,5 @@ if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "Fix up bash done"
   echo "------------------------------------------------------"
 fi
-
+done
 set +e
