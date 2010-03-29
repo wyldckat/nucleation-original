@@ -300,7 +300,7 @@ if [ ! -e "$THIRDPARTY_BIN" ]; then
     wget $urladr
 fi
 echo "------------------------------------------------------"
-echo "Untar files"
+echo "Untar files -- This can take time"
 tar xfz $THIRDPARTY_GENERAL
 if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
 echo "------------------------------------------------------"
