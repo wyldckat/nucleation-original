@@ -357,7 +357,7 @@ echo "Compiling OpenFOAM...output is in make.log"
 echo "THIS CAN TAKE HOURS..."
 echo "Estimated time it will take: $estimated_timed minutes."
 echo "Total time that it did take will be shown upon completion."
-echo "Started at: `date`"
+echo "Started at: `echo date`"
 echo "------------------------------------------------------"
 time ./Allwmake $BUILD_DOCUMENTATION >make.log 2>&1
 
@@ -365,11 +365,7 @@ echo "------------------------------------------------------"
 echo "Checking installation - you should see NO criticals..."
 echo "------------------------------------------------------"
 foamInstallationTest
-set +e
-
-#Still don't know why but need to run the fix multiple times to work
-set -e
-for i in "1" "2"; do
+#TODO! #Still don't know why but need to run the fix multiple times to work
 if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "------------------------------------------------------"
   echo "Fixing call for bash in tutorials (default is dash in Ubuntu)"
@@ -381,5 +377,4 @@ if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "Fix up bash done"
   echo "------------------------------------------------------"
 fi
-done
 set +e
