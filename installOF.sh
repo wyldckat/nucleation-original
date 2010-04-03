@@ -10,13 +10,10 @@
 #
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
-# 1 - Remake the interface using dialog < mark TODOS >
-# 2 - Add packages to apt-get for building OpenFOAM's gcc and code documentation
-# 3 - Add Qt 4.3.5 building, especially for Ubuntu 8.04 LTS - also has problems in 10.04!!
-# 4 - Add building Paraview, with or without python
-# 5 - add option to build OpenFOAM's gcc, but also will need patching of 3 missing files
-# 6 - Multi-language support, since this script has only been tested in Ubuntu's standard english
-# ps: Do you believe that is really necessary that?? English is standard.
+#TODO 1 - Add Qt 4.3.5 building, especially for Ubuntu 8.04 LTS - also has problems in 10.04!!
+#TODO 2 - Add building Paraview, with or without python and MPI
+#TODO 3 - add option to build OpenFOAM's gcc, but also will need patching of 3 missing files
+#TODO 4 - Multi-language support, since this script has only been tested in Ubuntu's standard english
 
 #Code ---------------------------------------------------------
 
@@ -29,6 +26,8 @@ version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$
 sudo apt-get install -q=2 dialog
 
 #FUNCTIONS SECTION ---------------------------------------------------------
+
+#Patch to compile using multicore
 function patchBashrcMultiCore()
 {
 tmpVar=$PWD
@@ -62,6 +61,7 @@ cd $tmpVar
 unset tmpVar
 }
 
+#Patch to work on 32-bit versions
 function patchBashrcTo32()
 {
 tmpVar=$PWD
@@ -83,6 +83,7 @@ cd $tmpVar
 unset tmpVar
 }
 
+#Patch to use System compiler
 function patchSettingsToSystemCompiler()
 {
 tmpVar=$PWD
@@ -123,23 +124,25 @@ function calcestimate()
   set +e
   bogompis=`cat /proc/cpuinfo | grep bogomips | head -n 1 | sed s/bogomips.*:\ //`
   numcores=`egrep "^processor" /proc/cpuinfo | wc -l`
-  return `echo '1250000 / ( '$bogompis'  * '$numcores' ) ' | bc`
+  return `echo '12000000 / ( '$bogompis'  * '$numcores' ) ' | bc`
   set -e
 }
+
 #END FUNCTIONS SECTION ---------------------------------------------------------
 
 
 #INTERACTIVE SECTION  ----------------------------------
+
 #Presentation dialog
 dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
---msgbox "-------------------------------------------------------------------------\n
-| =========               |                                               |\n
-| \\      /  F ield        | OpenFOAM-1.6.x Installer for Ubuntu           |\n
-|  \\    /   O peration    | Licensed under GPLv3                          |\n
-|   \\  /    A nd          | Web: http://code.google.com/p/openfoam-ubuntu |\n
-|    \\/     M anipulation | By: Fabio Canesin and Bruno Santos            |\n
-|                         | Based on orginial work from Mads Reck         |\n
--------------------------------------------------------------------------" 12 80
+--msgbox "-------------------------------------------------------------------\n
+| =========              |\n
+| \\      / F ield        | OpenFOAM-1.6.x Installer for Ubuntu\n
+|  \\    /  O peration    | Licensed under GPLv3\n
+|   \\  /   A nd          | Web: http://code.google.com/p/openfoam-ubuntu\n
+|    \\/    M anipulation | By: Fabio Canesin and Bruno Santos\n
+|                        | Based on orginial work from Mads Reck\n
+-----------------------------------------------------------------------" 11 80
 #
 #TODO!
 #Make possible to user choose the path of installation
@@ -231,8 +234,6 @@ dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.
 done
 rm -rf tempmirror.log
 fi
-#END OF INTERACTIVE SECTION  ----------------------------------
-
 clear
 
 #Show to user the detected settings, last chance to cancel the installer
@@ -245,12 +246,18 @@ dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/open
 |   \\  /      Install mode: $INSTALLMODE\n
 |    \\/       Run apt-get upgrade ? $DOUPGRADE\n
 |             Fix tutorials ? $FIXTUTORIALS\n
-| *installOF* Build documentation ? $BUILD_DOCUMENTATION\n
+| *installOF* Build documentation ? $BUILD_DOCUMENTATION <nothing means no>\n
 | *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
 |             Use OpenFOAM gcc ? $USE_OF_GCC\n
 -------------------------------------------------------------------------\n
 !For more info see documentation on code.google.com/p/openfoam-ubuntu" 16 80
 clear
+
+#END OF INTERACTIVE SECTION  ----------------------------------
+
+#Run usual install steps if in "fresh" or "server" install mode
+#If not, skip to the last few lines of the script
+if [ "$INSTALLMODE" != "update" ]; then
 
 #Defining packages to download
 THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
@@ -272,8 +279,6 @@ if [ "$version" != "8.04" ]; then
   fi
 fi
 
-#Do update and if choosed upgrade
-
 sudo apt-get update -y -q=1
 if [ "$DOUPGRADE" == "Yes" ]; then
 sudo apt-get upgrade -y
@@ -286,11 +291,14 @@ if [ x"$?" == x"1" ]; then
   sudo apt-get install -y -q=2 curl
 fi 
 
+#Create OpenFOAM folder in home dir
 cd ~
-if [ ! -d "OpenFOAM" ]; then mkdir OpenFOAM; fi
+if [ ! -d "OpenFOAM" ]; then
+	mkdir OpenFOAM
+fi
 cd OpenFOAM
 
-#Download Thidparty files
+#Download Thidparty files for detected system and selected mirror
 if [ ! -e "$THIRDPARTY_GENERAL" ]; then 
 	urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_GENERAL?use_mirror=$mirror
     wget $urladr
@@ -302,10 +310,11 @@ fi
 echo "------------------------------------------------------"
 echo "Untar files -- This can take time"
 tar xfz $THIRDPARTY_GENERAL
-if [ "x$THIRDPARTY_BIN" != "x" ]; then tar xfz $THIRDPARTY_BIN; fi
+if [ "x$THIRDPARTY_BIN" != "x" ]; then 
+	tar xfz $THIRDPARTY_BIN
+fi
 echo "------------------------------------------------------"
 
-#apply fix, only if it isn't to use the system's compiler
 isleftlarger_or_equal $version 9.10
 if [ x"$?" == x"1" -a "$USE_OF_GCC" == "Yes" ]; then
   echo "-----------------------------------------------------"
@@ -326,13 +335,19 @@ echo "------------------------------------------------------"
 ln -s  ~/OpenFOAM/ThirdParty-1.6 ~/OpenFOAM/ThirdParty-1.6.x
 git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
 
-#Apply patches
+#Apply patches from defined functions
 echo "------------------------------------------------------"
 echo "Applying patches to bashrc and settings.sh ..."
 echo "------------------------------------------------------"
 patchBashrcMultiCore #for faster builds on multi-core machines
-if [ x`echo $arch | grep -e "i.86"` != "x" ]; then patchBashrcTo32; fi #proper fix for running in 32bit
-if [ "$USE_OF_GCC" == "0" ]; then patchSettingsToSystemCompiler; fi #for using the system's compiler
+ #proper fix for running in 32bit
+if [ x`echo $arch | grep -e "i.86"` != "x" ]; then
+	patchBashrcTo32
+fi
+#Fix for using the system's compiler
+if [ "$USE_OF_GCC" == "0" ]; then
+	patchSettingsToSystemCompiler
+fi #for using the system's compiler
 
 echo "------------------------------------------------------"
 echo "Activate OpenFOAM environment and add entry in ~/.bashrc"
@@ -360,12 +375,12 @@ echo "Total time that it did take will be shown upon completion."
 echo "Started at: `echo date`"
 echo "------------------------------------------------------"
 time ./Allwmake $BUILD_DOCUMENTATION >make.log 2>&1
-
 echo "------------------------------------------------------"
 echo "Checking installation - you should see NO criticals..."
 echo "------------------------------------------------------"
 foamInstallationTest
-#TODO! #Still don't know why but need to run the fix multiple times to work
+
+#TODO!Still don't know why but need to run the fix multiple times to work
 if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "------------------------------------------------------"
   echo "Fixing call for bash in tutorials (default is dash in Ubuntu)"
@@ -377,4 +392,21 @@ if [ "$FIXTUTORIALS" == "Yes" ]; then
   echo "Fix up bash done"
   echo "------------------------------------------------------"
 fi
+
+#If using bash alias, inform to use it to run!
+if [ "$USE_ALIAS_FOR_BASHRC" == "Yes" ]; then
+  echo "Instalation complete - You have choose to use bash alias"
+  echo "Before run OpenFOAM type: startFoam"
+  echo "------------------------------------------------------"
+else
+  echo "Instalation complete"
+  echo "------------------------------------------------------"
+fi
+fi
+
+#TODO! Create update routines, this should be pretty easy
+if [ "$INSTALLMODE" == "update" ]; then
+fi
+
 set +e
+exit
