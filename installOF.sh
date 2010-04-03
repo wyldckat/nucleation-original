@@ -406,6 +406,20 @@ fi
 
 #TODO! Create update routines, this should be pretty easy
 if [ "$INSTALLMODE" == "update" ]; then
+	startFoam
+	cd $WM_PROJECT_DIR
+	echo "------------------------------------------------------"
+	echo "Let's do a git pull"
+	echo "------------------------------------------------------"
+	git pull
+	echo "------------------------------------------------------"
+	echo "Compiling all the stuff"
+	echo "------------------------------------------------------"
+	calcestimate
+	estimated_timed=$?
+	echo "Estimated time is: $estimated_timed minutes."
+	echo "Started at: `echo date`"
+	time ./Allwmake >make.log 2>&1
 fi
 
 set +e
