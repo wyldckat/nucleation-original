@@ -584,7 +584,8 @@ function check_installation()
   echo -e "\n\nThis report has been saved in file $WM_PROJECT_DIR/foamIT.log"
 
   #if issues found then generate "bug report" and request that the user reports it!
-  if [ x`cat foamIT.log | grep "Critical systems ok"` == "x" ]; then
+  IFERRORSDETECTED=`cat foamIT.log | grep "Critical systems ok"`
+  if [ "x$IFERRORSDETECTED" == "x" ]; then
     FOAMINSTALLFAILED="Yes"
     echo -e "\nSadly there have been some critical issues detected by OpenFOAM's foamInstallationTest script."
     echo "A full report file can be generated so you can post it at this forum thread:"
@@ -609,6 +610,7 @@ function check_installation()
     
     continue_after_failed_openfoam
   fi
+  unset IFERRORSDETECTED
 }
 
 function fix_tutorials()
@@ -916,3 +918,4 @@ else
   #this shouldn't be necessary, but just in case:
   exit
 fi
+
