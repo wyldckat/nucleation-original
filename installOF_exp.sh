@@ -13,7 +13,6 @@
 #TODO 1 - Add Qt 4.3.5 building, especially for Ubuntu 8.04 LTS - also has problems in 10.04!!
 #TODO 2 - Add building Paraview, with or without python and MPI
 #TODO 3 - add option to build OpenFOAM's gcc, but also will need patching of 3 missing files
-#TODO 4 - Multi-language support, since this script has only been tested in Ubuntu's standard english
 
 #Code ---------------------------------------------------------
 
@@ -41,7 +40,7 @@ version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$
 function patchBashrcMultiCore()
 {
 tmpVar=$PWD
-cd $PATHOF/OpenFOAM/OpenFOAM-1.6.x/etc/
+cd $PATHOF/OpenFOAM-1.6.x/etc/
 
 echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
 +++ bashrc  2009-11-21 00:01:20.814519578 +0000
@@ -75,7 +74,7 @@ unset tmpVar
 function patchBashrcTo32()
 {
 tmpVar=$PWD
-cd $PATHOF/OpenFOAM/OpenFOAM-1.6.x/etc/
+cd $PATHOF/OpenFOAM-1.6.x/etc/
 
 echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
 +++ bashrc  2009-11-21 00:01:20.814519578 +0000
@@ -97,7 +96,7 @@ unset tmpVar
 function patchSettingsToSystemCompiler()
 {
 tmpVar=$PWD
-cd $PATHOF/OpenFOAM/OpenFOAM-1.6.x/etc/
+cd $PATHOF/OpenFOAM-1.6.x/etc/
 
 echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
 +++ settings.sh 2009-11-21 00:01:59.157391716 +0000
@@ -119,7 +118,7 @@ unset tmpVar
 function patchParaFoamScript()
 {
 tmpVar=$PWD
-cd $PATHOF/OpenFOAM/OpenFOAM-1.6.x/bin/
+cd $PATHOF/OpenFOAM-1.6.x/bin/
 
 echo '--- ../../paraFoam  2010-04-11 01:38:34.000000000 +0100
 +++ paraFoam  2010-04-11 01:38:18.000000000 +0100
@@ -160,11 +159,14 @@ function isleftlarger_or_equal()
 #is package installed
 function ispackage_installed()
 {
-  if [ x`dpkg-query -W -f='${Status}\n' $1 | grep not-installed` == "x" ]; then
+  set +e
+  DPKGRESULTTMP=`dpkg-query -W -f='${Status}\n' $1 2>&1 | grep -e "not-installed" -e "No packages found"`
+  if [ "x$DPKGRESULTTMP" == "x" ]; then
     return 1
   else
     return 0
   fi
+  unset DPKGRESULTTMP
   set -e
 }
 
@@ -178,6 +180,12 @@ function issystem_english()
     return 0
   fi
   set -e
+}
+
+#set LC_ALL to C
+function set_system_to_neutral_lang()
+{
+  export LC_ALL=C
 }
 
 #returns time in minutes
@@ -231,8 +239,8 @@ function ask_for_sudo_policy()
   echo "(yes or no): "
   read casestat;
   case $casestat in
-    yes | y | Y | Yes | YES) SHOW_SUDO_COMMANDS_ONLY="YES";;
-    no | n | N | No | NO) SHOW_SUDO_COMMANDS_ONLY="";;
+    yes | y | Y | Yes | YES) SHOW_SUDO_COMMANDS_ONLY="";;
+    no | n | N | No | NO) SHOW_SUDO_COMMANDS_ONLY="YES";;
   esac
   echo "------------------------------------------------------"
 }
@@ -241,9 +249,9 @@ function ask_for_sudo_policy()
 function install_dialog_package()
 {
   ispackage_installed dialog
-  if [ x"$?" == x"0" ]; then
+  if [ "x$?" == "x0" ]; then
     #if permission granted
-    if [ x"$SHOW_SUDO_COMMANDS_ONLY" == "x" ]; then
+    if [ "x$SHOW_SUDO_COMMANDS_ONLY" != "xYES" ]; then
       #tell the user that dialog has to be installed, and request permission to install it
       echo 'This script needs the package "dialog" to be installed. It will execute the command:'
       echo '      sudo apt-get install dialog'
@@ -263,6 +271,13 @@ function install_dialog_package()
       unset aaa_tmp_var
     fi
   fi
+
+  #confirm it's installed
+  ispackage_installed dialog
+  if [ "x$?" == "x0" ]; then
+    echo "The package dialog isn't installed. Aborting script."
+    exit 1
+  fi
 }
 
 #Defining packages to download
@@ -275,7 +290,7 @@ function define_packages_to_download()
     THIRDPARTY_BIN="ThirdParty-1.6.linuxGcc.gtgz"
   else
     echo "Sorry, architecture not recognized, aborting."
-    exit
+    exit 1
   fi
 }
 
@@ -308,7 +323,7 @@ function install_ubuntu_packages()
   if [ x"$PACKAGES_TO_INSTALL" != "x" ]; then
 
     #if permission granted
-    if [ x"$SHOW_SUDO_COMMANDS_ONLY" == "x" ]; then
+    if [ x"$SHOW_SUDO_COMMANDS_ONLY" != "xYES" ]; then
 
       echo 'The command "sudo apt-get update -y -q=1" is now going to be executed. Please provide sudo password if it asks you.'
       sudo apt-get update -y -q=1
@@ -365,6 +380,20 @@ function create_OpenFOAM_folder()
   fi
 }
 
+# the 1st argument is the base address
+# the 2nd argument is the file name
+# the 3rd argument is the rest of the URL address
+function do_wget()
+{
+  #either get the whole file, or try completing it, in case the user 
+  #used previously Ctrl+C
+  if [ ! -e "$2" ]; then
+    wget "$1""$2""$3"
+  else
+    wget -c "$1""$2""$3"
+  fi
+}
+
 #Download necessary files
 function download_files()
 {
@@ -372,18 +401,15 @@ function download_files()
 
   #Download Third Party files for detected system and selected mirror
   #download Third Party sources
-  if [ ! -e "$THIRDPARTY_GENERAL" ]; then 
-    urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_GENERAL?use_mirror=$mirror
-    wget $urladr
-  fi
+  do_wget "http://downloads.sourceforge.net/foam/" "$THIRDPARTY_GENERAL" "?use_mirror=$mirror"
 
   #download Third Party binaries, but only if requested and necessary!
   if [ "x$THIRDPARTY_BIN" != "x" ]; then
-    if [ ! -e "$THIRDPARTY_BIN" ]; then 
-      urladr=http://downloads.sourceforge.net/foam/$THIRDPARTY_BIN?use_mirror=$mirror
-      wget $urladr
-    fi
+      do_wget "http://downloads.sourceforge.net/foam/" "$THIRDPARTY_BIN" "?use_mirror=$mirror"
   fi
+
+  #TODO: md5sum check?
+
 }
 
 #Unpack downloaded files
@@ -410,7 +436,11 @@ function OpenFOAM_git_clone()
   echo "------------------------------------------------------"
   echo "Retrieving OpenFOAM 1.6.x from git..."
   echo "------------------------------------------------------"
-  ln -s $PATHOF/OpenFOAM/ThirdParty-1.6 $PATHOF/OpenFOAM/ThirdParty-1.6.x
+  #redo the link if necessary
+  if [ -L "$PATHOF/ThirdParty-1.6.x" ]; then
+    unlink $PATHOF/ThirdParty-1.6.x
+  fi
+  ln -s $PATHOF/ThirdParty-1.6 $PATHOF/ThirdParty-1.6.x
   git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
 }
 
@@ -476,7 +506,7 @@ function setOpenFOAMEnv()
   echo "Activate OpenFOAM environment"
   echo "------------------------------------------------------"
   cd OpenFOAM-1.6.x/
-  . $PATHOF/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc 
+  . $PATHOF/OpenFOAM-1.6.x/etc/bashrc 
 }
 
 #Add OpenFOAM's bashrc entry in $PATHOF/.bashrc
@@ -491,9 +521,9 @@ function add_openfoam_to_bashrc()
   cp ~/.bashrc ~/.bashrc.old
   mv ~/.bashrc.new ~/.bashrc
   if [ "$USE_ALIAS_FOR_BASHRC" == "Yes" ]; then
-    echo -e "alias startFoam=\". $PATHOF/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
+    echo -e "alias startFoam=\". $PATHOF/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
   else
-    echo ". $PATHOF/OpenFOAM/OpenFOAM-1.6.x/etc/bashrc" >> ~/.bashrc
+    echo ". $PATHOF/OpenFOAM-1.6.x/etc/bashrc" >> ~/.bashrc
   fi
 }
 
@@ -516,7 +546,7 @@ function allwmake_openfoam()
   echo "Total time that it did take will be shown upon completion."
   echo "Started at: `date`"
   echo "------------------------------------------------------"
-  bash -c "time ./Allwmake $BUILD_DOCUMENTATION >make.log" 2>&1
+  bash -c "time ./Allwmake $BUILD_DOCUMENTATION > make.log 2>&1" 2>&1
   #bash -c is the only way I got for getting time results straight to display and also logged
   echo "Build complete at: `date`"
 }
@@ -525,7 +555,7 @@ function continue_after_failed_openfoam()
 {
   if [ x"$FOAMINSTALLFAILED" != "x" ]; then
     FOAMINSTALLFAILED_BUTCONT="No"
-    echo "Although the last seems to have failed, do you wish to continue with the remaining steps?"
+    echo "Although the previous step seems to have failed, do you wish to continue with the remaining steps?"
     # echo "Missing steps:"
     #TODO: is Qt and Paraview in the list of yet "to do"?
     echo "Continue? (yes or no): "
@@ -654,6 +684,12 @@ function OpenFOAM_git_pull()
 
 #END FUNCTIONS SECTION -----------------------------------------------------
 
+#verify system's language and set to C if not english
+issystem_english
+if [ x"$?" == "x0" ]; then
+  set_system_to_neutral_lang
+fi
+
 #ask the user for what policy to use for running sudo
 ask_for_sudo_policy
 
@@ -670,8 +706,8 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 |  \\    /  O peration    | Licensed under GPLv3\n
 |   \\  /   A nd          | Web: http://code.google.com/p/openfoam-ubuntu\n
 |    \\/    M anipulation | By: Fabio Canesin and Bruno Santos\n
-|                        | Based on orginial work from Mads Reck\n
------------------------------------------------------------------------" 11 80
+|                        | Based on original work from Mads Reck\n
+-----------------------------------------------------------------------" 12 80
 #
 #TODO!
 #Make possible to user choose the path of installation
@@ -741,10 +777,12 @@ internap 'US' )
 
 #Detect and take care of fastest mirror
 if [ "$mirror" == "findClosest" ]; then
+  clear
+
   (echo "Searching for the closest mirror..."
     echo "It can take from 10s to 90s (estimated)..."
     echo "--------------------"
-    echo "It can provide fake closest!"
+    echo "Warning: This could provide a fake closest!"
     echo "--------------------"
     best_time=9999
     #predefine value to mesh, otherwise it will be stuck in an endless loop!
@@ -776,7 +814,7 @@ dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/open
 --msgbox "-------------------------------------------------------------------------\n
 | =========   Detected that you are running: Ubuntu $version - $arch\n
 | \\      /    The choosed mirror is: $mirror\n
-|  \\    /     Loging: $LOG_OUTPUTS\n
+|  \\    /     Logging: $LOG_OUTPUTS\n
 |   \\  /      Install mode: $INSTALLMODE\n
 |    \\/       Run apt-get upgrade ? $DOUPGRADE\n
 |             Fix tutorials ? $FIXTUTORIALS\n
@@ -836,7 +874,10 @@ if [ "$INSTALLMODE" != "update" ]; then
 
   #Continue with the next steps, only if it's OK to continue!
   if [ x"$FOAMINSTALLFAILED" == "x" -o x"$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
-
+    
+    #this echo->null is just that the IF block isn't empty...
+    echo > /dev/null
+    
     #TODO: build Qt here
     
     #TODO: build Paraview
