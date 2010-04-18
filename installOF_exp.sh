@@ -1012,7 +1012,7 @@ function build_Paraview()
       bash -c "time ./makeParaView $PARAVIEW_BUILD_OPTIONS" > "$PARAVIEW_BUILD_LOG" 2>&1
 
       if [ -e "$ParaView_DIR/bin/paraview" ]; then
-        echo "Build process finished successfully: Qt is ready to use for building Paraview."
+        echo "Build process finished successfully: Paraview is ready to use."
       else
         echo "Build process didn't finished with success. Please check the log file for more information."
         echo "You can post it at this forum thread:"
@@ -1036,7 +1036,13 @@ function build_PV3FoamReader()
       setOpenFOAMEnv
     fi
 
-    if [ ! -e "$ParaView_DIR/bin/paraview" ]; then
+    if [ "$BUILD_QT" == "Yes" -a "x$BUILDING_QT_FAILED" == "xYes" ]; then
+
+      echo "------------------------------------------------------"
+      echo "No Qt, no Paraview, thus no PV3FoamReader."
+      echo "------------------------------------------------------"
+
+    elif [ ! -e "$ParaView_DIR/bin/paraview" ]; then
       
       echo "------------------------------------------------------"
       echo "Paraview isn't available where it is expected:"
