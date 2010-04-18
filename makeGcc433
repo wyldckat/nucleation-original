@@ -1,0 +1,84 @@
+#---------------------------------*- sh -*-------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     |
+#   \\  /    A nd           | Copyright (C) 1991-2009 OpenCFD Ltd.
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software; you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by the
+#     Free Software Foundation; either version 2 of the License, or (at your
+#     option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM; if not, write to the Free Software Foundation,
+#     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#
+# Script
+#     makeGcc433
+#
+# Description
+#     Build script gcc-4.3.3
+#
+#     One argument is accepted for adding to the config sequence.
+#        --disable-multilib    - useful for strict 64 bit installations
+#------------------------------------------------------------------------------
+
+#
+# Set the number of cores to build on
+#
+WM_NCOMPPROCS=1
+
+if [ -r /proc/cpuinfo ]
+then
+    WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo | wc -l)
+    [ $WM_NCOMPPROCS -le 8 ] || WM_NCOMPPROCS=8
+fi
+
+echo "Building on " $WM_NCOMPPROCS " cores"
+
+GMP_DIR=$WM_THIRD_PARTY_DIR/gmp-4.2.4
+MPFR_DIR=$WM_THIRD_PARTY_DIR/mpfr-2.4.1
+GCC_DIR=$WM_THIRD_PARTY_DIR/gcc-4.3.3
+
+#GMPROOT=${GMP_DIR}/platforms/$WM_ARCH$WM_COMPILER_ARCH
+#MPFRROOT=${MPFR_DIR}/platforms/$WM_ARCH$WM_COMPILER_ARCH
+GCCROOT=${GCC_DIR}/platforms/$WM_ARCH$WM_COMPILER_ARCH
+
+#hook up gmp and mpfr to gcc-4.3.3 folder
+if [ ! -d "$GCC_DIR/gmp" ]; then
+  ln -s $GMP_DIR $GCC_DIR/gmp
+fi
+if [ ! -d "$GCC_DIR/mpfr" ]; then
+  ln -s $MPFR_DIR $GCC_DIR/mpfr
+fi
+
+#
+# Build GCC
+#
+if [ ! -d $GCCROOT ]
+then
+    (
+       if [ ! -d "$GCC_DIR/build" ]; then mkdir $GCC_DIR/build; fi \
+    && cd $GCC_DIR/build \
+    && if [ -e Makefile ]; then make distclean; fi \
+    && ../configure --enable-languages=c,c++ --with-pkgversion='OpenFOAM' \
+      --enable-__cxa_atexit --enable-libstdcxx-allocator=new \
+      --with-system-zlib --prefix=$GCCROOT $1 \
+    && make -j $WM_NCOMPPROCS \
+    && make install
+    )
+    echo "    Finished building gcc."
+else
+    echo "    gcc already built."
+fi
+
+# ----------------------------------------------------------------- end-of-file
