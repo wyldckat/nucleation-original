@@ -784,7 +784,8 @@ function continue_after_failed_openfoam()
     
     if [ "$BUILD_CCM26TOFOAM" == "Yes" ]; then 
       echo "Missing steps are:"
-      #TODO: is Qt and Paraview in the list of yet "to do"?
+      if [ "$BUILD_QT" == "Yes" ]; then echo "- Building Qt"; fi
+      if [ "$BUILD_PARAVIEW" == "Yes" ]; then echo "- Building Paraview"; fi
       if [ "$BUILD_CCM26TOFOAM" == "Yes" ]; then echo "- Building ccm26ToFoam"; fi
     fi
 
