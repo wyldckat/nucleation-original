@@ -34,111 +34,6 @@ version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$
 
 #FUNCTIONS SECTION ---------------------------------------------------------
 
-#-- PATCHING FUNCTIONS -----------------------------------------------------
-
-#Patch to compile using multicore
-function patchBashrcMultiCore()
-{
-tmpVar=$PWD
-cd $PATHOF/OpenFOAM-1.6.x/etc/
-
-echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
-+++ bashrc  2009-11-21 00:01:20.814519578 +0000
-@@ -105,6 +105,20 @@
- : ${WM_MPLIB:=OPENMPI}; export WM_MPLIB
- 
- 
-+#
-+# Set the number of cores to build on
-+#
-+WM_NCOMPPROCS=1
-+
-+if [ -r /proc/cpuinfo ]
-+then
-+    WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo | wc -l)
-+    [ $WM_NCOMPPROCS -le 8 ] || WM_NCOMPPROCS=8
-+fi
-+
-+echo "Building on " $WM_NCOMPPROCS " cores"
-+export WM_NCOMPPROCS
-+
- # Run options (floating-point signal handling and memory initialisation)
- # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- export FOAM_SIGFPE=' | patch -p0
-
-cd $tmpVar
-unset tmpVar
-}
-
-#Patch to work on 32-bit versions
-function patchBashrcTo32()
-{
-tmpVar=$PWD
-cd $PATHOF/OpenFOAM-1.6.x/etc/
-
-echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
-+++ bashrc  2009-11-21 00:01:20.814519578 +0000
-@@ -93,7 +93,7 @@
- # Compilation options (architecture, precision, optimised, debug or profiling)
- # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- # WM_ARCH_OPTION = 32 | 64
--: ${WM_ARCH_OPTION:=64}; export WM_ARCH_OPTION
-+: ${WM_ARCH_OPTION:=32}; export WM_ARCH_OPTION
- 
- # WM_PRECISION_OPTION = DP | SP
- : ${WM_PRECISION_OPTION:=DP}; export WM_PRECISION_OPTION' | patch -p0
-
-cd $tmpVar
-unset tmpVar
-}
-
-#Patch to use System compiler
-function patchSettingsToSystemCompiler()
-{
-tmpVar=$PWD
-cd $PATHOF/OpenFOAM-1.6.x/etc/
-
-echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
-+++ settings.sh 2009-11-21 00:01:59.157391716 +0000
-@@ -95,7 +95,7 @@
- # Select compiler installation
- # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- # compilerInstall = OpenFOAM | System
--compilerInstall=OpenFOAM
-+compilerInstall=System
- 
- case "${compilerInstall:-OpenFOAM}" in
- OpenFOAM)' | patch -p0
-
-cd $tmpVar
-unset tmpVar
-}
-
-#Patch paraFoam script
-function patchParaFoamScript()
-{
-tmpVar=$PWD
-cd $PATHOF/OpenFOAM-1.6.x/bin/
-
-echo '--- ../../paraFoam  2010-04-11 01:38:34.000000000 +0100
-+++ paraFoam  2010-04-11 01:38:18.000000000 +0100
-@@ -75,6 +75,8 @@
-     esac
- done
- 
-+export LC_ALL=C
-+
- # get a sensible caseName
- caseName=${PWD##*/}
- caseFile="$caseName.OpenFOAM"
-' | patch -p0
-
-cd $tmpVar
-unset tmpVar
-}
-
-#-- END PATCHING FUNCTIONS -------------------------------------------------
-
 
 #-- UTILITY FUNCTIONS ------------------------------------------------------
 
@@ -167,6 +62,18 @@ function ispackage_installed()
     return 0
   fi
   unset DPKGRESULTTMP
+  set -e
+}
+
+#is sh->bash ? if so, returns 1, else 0
+function is_sh_bash()
+{
+  set +e
+  if [ "x`find \`which sh\` -lname bash`" == "x" ]; then
+    return 0
+  else
+    return 1
+  fi
   set -e
 }
 
@@ -217,6 +124,172 @@ function cd_openfoam()
   cd $PATHOF
 }
 #-- END UTILITY FUNCTIONS --------------------------------------------------
+
+#-- PATCHING FUNCTIONS -----------------------------------------------------
+
+#Patch to compile using multicore
+function patchBashrcMultiCore()
+{
+tmpVar=$PWD
+cd_openfoam
+cd OpenFOAM-1.6.x/etc/
+
+echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
++++ bashrc  2009-11-21 00:01:20.814519578 +0000
+@@ -105,6 +105,20 @@
+ : ${WM_MPLIB:=OPENMPI}; export WM_MPLIB
+ 
+ 
++#
++# Set the number of cores to build on
++#
++WM_NCOMPPROCS=1
++
++if [ -r /proc/cpuinfo ]
++then
++    WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo | wc -l)
++    [ $WM_NCOMPPROCS -le 8 ] || WM_NCOMPPROCS=8
++fi
++
++echo "Building on " $WM_NCOMPPROCS " cores"
++export WM_NCOMPPROCS
++
+ # Run options (floating-point signal handling and memory initialisation)
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ export FOAM_SIGFPE=' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
+
+#Patch to work on 32-bit versions
+function patchBashrcTo32()
+{
+tmpVar=$PWD
+cd_openfoam
+cd OpenFOAM-1.6.x/etc/
+
+echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
++++ bashrc  2009-11-21 00:01:20.814519578 +0000
+@@ -93,7 +93,7 @@
+ # Compilation options (architecture, precision, optimised, debug or profiling)
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ # WM_ARCH_OPTION = 32 | 64
+-: ${WM_ARCH_OPTION:=64}; export WM_ARCH_OPTION
++: ${WM_ARCH_OPTION:=32}; export WM_ARCH_OPTION
+ 
+ # WM_PRECISION_OPTION = DP | SP
+ : ${WM_PRECISION_OPTION:=DP}; export WM_PRECISION_OPTION' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
+
+#Patch to use System compiler
+function patchSettingsToSystemCompiler()
+{
+tmpVar=$PWD
+cd_openfoam
+cd OpenFOAM-1.6.x/etc/
+
+echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
++++ settings.sh 2009-11-21 00:01:59.157391716 +0000
+@@ -95,7 +95,7 @@
+ # Select compiler installation
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ # compilerInstall = OpenFOAM | System
+-compilerInstall=OpenFOAM
++compilerInstall=System
+ 
+ case "${compilerInstall:-OpenFOAM}" in
+ OpenFOAM)' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
+
+#Patch paraFoam script
+function patchParaFoamScript()
+{
+tmpVar=$PWD
+cd_openfoam
+cd OpenFOAM-1.6.x/bin/
+
+echo '--- ../../paraFoam  2010-04-11 01:38:34.000000000 +0100
++++ paraFoam  2010-04-11 01:38:18.000000000 +0100
+@@ -75,6 +75,8 @@
+     esac
+ done
+ 
++export LC_ALL=C
++
+ # get a sensible caseName
+ caseName=${PWD##*/}
+ caseFile="$caseName.OpenFOAM"
+' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
+
+
+#Patch AllwmakeLibccmio script
+#Code source for patch: http://www.cfd-online.com/Forums/openfoam-bugs/62300-of15-libccmio-thus-ccm26tofoam-do-not-compile-2.html
+function patchAllwmakeLibccmioScript()
+{
+tmpVar=$PWD
+cd_openfoam
+cd ThirdParty-1.6/
+
+echo '--- ../AllwmakeLibccmio  2009-07-24 13:51:14.000000000 +0100
++++ AllwmakeLibccmio 2009-10-17 11:29:36.000000000 +0100
+@@ -33,6 +33,7 @@
+ set -x
+ 
+ packageDir=libccmio-2.6.1
++origDir=$PWD
+ 
+ if [ ! -d ${packageDir} ]
+ then
+@@ -52,7 +53,17 @@
+ 
+ if [ -d ${packageDir} -a ! -d ${packageDir}/Make ]
+ then
+-   cp -r wmakeFiles/libccmio/Make ${packageDir}/Make
++  if [ ! -d "wmakeFiles/libccmio/Make" ]; then
++    mkdir -p ${packageDir}/Make
++    cd ${packageDir}/Make
++    wget http://www.cfd-online.com/OpenFOAM_Discus/messages/126/files-8822.unk
++    wget http://www.cfd-online.com/OpenFOAM_Discus/messages/126/options-8823.unk
++    mv -i files-8822.unk files
++    mv -i options-8823.unk options
++    cd $origDir
++  else
++    cp -r wmakeFiles/libccmio/Make ${packageDir}/Make
++  fi
+ fi
+ 
+ if [ -d ${packageDir}/Make ]' | patch -p0
+cd $tmpVar
+unset tmpVar
+}
+
+#Patch the missing files in MPFR that comes with the ThirdParty.General package
+function patchMPFRMissingFiles()
+{
+tmpVar=$PWD
+cd_openfoam
+cd ThirdParty-1.6/
+
+if [ -e "../patchMPFR" ]; then
+  patch -p1 < ../patchMPFR
+fi
+
+cd $tmpVar
+unset tmpVar
+}
+
+#-- END PATCHING FUNCTIONS -------------------------------------------------
 
 #-- MAIN FUNCTIONS ---------------------------------------------------------
 
@@ -292,6 +365,8 @@ function define_packages_to_download()
     echo "Sorry, architecture not recognized, aborting."
     exit 1
   fi
+  
+  MPFRPATCHFILE="patchMPFR"
 }
 
 #install packages in Ubuntu
@@ -388,9 +463,9 @@ function do_wget()
   #either get the whole file, or try completing it, in case the user 
   #used previously Ctrl+C
   if [ ! -e "$2" ]; then
-    wget "$1""$2""$3"
+    wget "$1""$2""$3" 2>&1
   else
-    wget -c "$1""$2""$3"
+    wget -c "$1""$2""$3" 2>&1
   fi
 }
 
@@ -410,6 +485,8 @@ function download_files()
 
   #TODO: md5sum check?
 
+  #download patch files that didn't fit in this script
+  do_wget "http://openfoam-ubuntu.googlecode.com/hg/" "$MPFRPATCHFILE"
 }
 
 #Unpack downloaded files
@@ -425,6 +502,7 @@ function unpack_downloaded_files()
   if [ "x$THIRDPARTY_BIN" != "x" ]; then 
     tar xfz $THIRDPARTY_BIN
   fi
+  
   echo "------------------------------------------------------"
 }
 
@@ -497,6 +575,10 @@ function apply_patches_fixes()
   if [ x"$?" != x"1" ]; then
     patchParaFoamScript
   fi
+  
+  #apply patches for MPFR and libccmio
+  patchMPFRMissingFiles
+  patchAllwmakeLibccmioScript
 }
 
 #Activate OpenFOAM environment
@@ -615,21 +697,23 @@ function check_installation()
 
 function fix_tutorials()
 {
-  #TODO! Confirm if the fix "find then do while" does the trick
   if [ "$FIXTUTORIALS" == "Yes" ]; then
     #set up environment, just in case we forget about it!
     if [ x"$FOAM_TUTORIALS" == "x" ]; then
       setOpenFOAMEnv
     fi
 
+    cd $WM_PROJECT_DIR
+
     echo "------------------------------------------------------"
     echo "Fixing call for bash in tutorials (default is dash in Ubuntu)"
-    find $FOAM_TUTORIALS/ -name All* | \
+    #NOTE: searching for patterns requires quotes
+    find $FOAM_TUTORIALS/ -name "All*" | \
     while read file
     do
-      mv $file $file.old
-      sed '/^#!/ s/\/bin\/sh/\/bin\/bash/' $file.old > $file
-      rm -f $file.old
+        mv "$file" "$file.old"
+        sed '/^#!/ s/\/bin\/sh/\/bin\/bash/' "$file.old" > "$file"
+        rm -f "$file.old"
     done
     echo "Fix up bash done"
     echo "------------------------------------------------------"
@@ -780,6 +864,11 @@ internap 'US' )
 #Detect and take care of fastest mirror
 if [ "$mirror" == "findClosest" ]; then
   clear
+
+  #show an empty dialog info box, to reduce flickering
+  dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+    --title "Mirror selector" \
+    --infobox " " 17 50
 
   (echo "Searching for the closest mirror..."
     echo "It can take from 10s to 90s (estimated)..."
