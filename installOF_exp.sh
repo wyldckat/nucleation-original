@@ -1151,15 +1151,11 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 |    \\/    M anipulation | By: Fabio Canesin and Bruno Santos\n
 |                        | Based on original work from Mads Reck\n
 -----------------------------------------------------------------------" 12 80
-#
-#TODO!
-#Make possible to user choose the path of installation
-PATHOF=$HOME/OpenFOAM
-#PATHOF=$(dialog --stdout \
-#--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
-#TODO! - patch "bashrc" accordingly
-#--inputbox 'Choose the install path: < default: ~/OpenFOAM >' 0 0)
-# 
+
+#Choose path to install OF, default is already set
+PATHOF=$(dialog --stdout \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+--inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM ) 
 
 #Logging option Dialog
 LOG_OUTPUTS=$(dialog --stdout \
@@ -1171,10 +1167,10 @@ LOG_OUTPUTS=$(dialog --stdout \
 #Installation mode dialog
 INSTALLMODE=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
---radiolist 'Choose the Install Mode: < default: fresh >' 0 0 0 \
+--radiolist 'Choose the Install Mode: < default: fresh >' 10 50 3 \
 'fresh' 'Make new Install' on  \
-'robot'   'Create automated installer - TODO!!!'           off \
-'server'    'Paraview with: -GUI +MPI - TODO!!!'    off )
+'update'   'Update currenty install'           off \
+'server'    'Paraview with: -GUI +MPI'    off )
 
 #Settings choosing Dialog
 SETTINGSOPTS=$(dialog --stdout --separate-output \
@@ -1197,16 +1193,64 @@ for setting in $SETTINGSOPTS ; do
   if [ $setting == 4 ] ; then USE_OF_GCC=Yes ; fi
   if [ $setting == 5 ] ; then BUILD_CCM26TOFOAM=Yes ; fi
 done
-
-#TODO: Dialog for Qt and Paraview options, but building Paraview (Qt is accessory) is a must for Ubuntu 8.04
 BUILD_QT=No
 BUILD_PARAVIEW=No
-BUILD_PARAVIEW_WITH_GUI=No
+BUILD_PARAVIEW_WITH_GUI=Yes
 BUILD_PARAVIEW_WITH_MPI=No
 BUILD_PARAVIEW_WITH_PYTHON=No
-#TODO: Dialog for Gcc options...
+#ParaView configurations for a fresh install
+if [ "$INSTALLMODE" == "fresh" ]; then
+    PVSETTINGSOPTS=$(dialog --stdout --separate-output \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+--checklist "Choose ParaView settings: < Space to select ! >" 15 52 5 \
+1 "Do custom build of QT 4.3.5 ?" off \
+2 "Do custom build of ParaView ?" off \
+3 "Build ParaView with GUI ?" on \
+4 "Build ParaView with MPI support ?" off \
+5 "Build ParaView with Python support ?" off )
+fi
+#Take care of unpack settings from PVSETTINGSOPTS
+for setting in $PVSETTINGSOPTS ; do
+  if [ $setting == 1 ] ; then BUILD_QT=Yes ; fi
+  if [ $setting == 2 ] ; then BUILD_PARAVIEW=Yes ; fi
+  if [ $setting == 3 ] ; then BUILD_PARAVIEW_WITH_GUI=Yes ; fi
+  if [ $setting == 4 ] ; then BUILD_PARAVIEW_WITH_MPI=Yes ; fi
+  if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
+done
+
+if [ "$version" == "10.04" ]; then
+    BUILD_PARAVIEW=Yes
+    dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+    --title "Non-optional setting detected!" \
+    --infobox "You are running Ubuntu $version. \n To ParaView properly work this script will do a custom build of ParaView and PV3FoamReader" 5 70
+fi
+if [ "$version" == "8.04" ]; then
+    BUILD_QT=Yes
+    dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+    --title "Non-optional setting detected!" \
+    --infobox "You are running Ubuntu $version. \n To ParaView properly work this script do a custom build of Qt" 5 70
+fi
+if [ "$INSTALLMODE" == "server" ]; then
+    BUILD_PARAVIEW=Yes
+    BUILD_PARAVIEW_WITH_GUI=No
+    BUILD_PARAVIEW_WITH_MPI=Yes
+    dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+    --title "Server Install settings" \
+    --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70  
+fi
+#GCC compiling settings
+GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
+--backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+--checklist "Choose Install settings: < Space to select ! >" 10 50 2 \
+1 "Build GCC ? -BETA!" off \
+2 "Build GCC in 64bit mode only ? -BETA!" off )
 BUILD_GCC=No
 BUILD_GCC_STRICT_64BIT=No #this is optionable for x86_64 only
+#Take care of unpack
+for setting in $GCCSETTINGSOPTS ; do
+  if [ $setting == 1 ] ; then BUILD_GCC=Yes ; fi
+  if [ $setting == 2 ] ; then BUILD_GCC_STRICT_64BIT=Yes ; fi
+done
 
 #Enable this script's logging functionality ...
 if [ "$LOG_OUTPUTS" == "Yes" ]; then
@@ -1276,12 +1320,11 @@ dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/open
 |  \\    /     Logging: $LOG_OUTPUTS\n
 |   \\  /      Install mode: $INSTALLMODE\n
 |    \\/       Run apt-get upgrade ? $DOUPGRADE\n
-|             \n
 | *installOF* Build documentation ? $BUILD_DOCUMENTATION <nothing means no>\n
 | *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
 |             Use OpenFOAM gcc ? $USE_OF_GCC\n
 -------------------------------------------------------------------------\n
-!For more info see documentation on code.google.com/p/openfoam-ubuntu" 16 80
+!For more info see documentation on code.google.com/p/openfoam-ubuntu" 14 80
 clear
 
 #END OF INTERACTIVE SECTION  ----------------------------------
@@ -1355,7 +1398,6 @@ if [ "$INSTALLMODE" != "update" ]; then
 
 fi
 
-#TODO! Create missing update routines (if any missing), and add option to dialog interface
 if [ "$INSTALLMODE" == "update" ]; then
 
   #Activate OpenFOAM environment
