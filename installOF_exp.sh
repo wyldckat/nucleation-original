@@ -328,6 +328,29 @@ cd $tmpVar
 unset tmpVar
 }
 
+#patch makeQt script to allow one more option for building Qt
+function patchMakeQtScript()
+{
+tmpVar=$PWD
+cd_openfoam
+cd ThirdParty-1.6/
+  
+echo '--- ../makeQt 2010-04-26 23:10:03.000000000 +0100
++++ makeQt  2010-04-26 23:11:10.000000000 +0100
+@@ -45,7 +45,7 @@
+     ./configure \
+         --prefix=${QT_ARCH_PATH} \
+         -nomake demos \
+-        -nomake examples
++        -nomake examples $1
+ 
+     if [ -r /proc/cpuinfo ]
+     then' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
+
 #-- END PATCHING FUNCTIONS -------------------------------------------------
 
 #-- MAIN FUNCTIONS ---------------------------------------------------------
@@ -670,8 +693,9 @@ function apply_patches_fixes()
     patchParaFoamScript
   fi
   
-  #apply patches for MPFR, makeParaView script and libccmio
+  #apply patches for MPFR, makeQt script, makeParaView script and libccmio
   patchMPFRMissingFiles
+  patchMakeQtScript
   patchMakeParaViewScript
   patchAllwmakeLibccmioScript
 }
@@ -782,7 +806,7 @@ function continue_after_failed_openfoam()
     FOAMINSTALLFAILED_BUTCONT="No"
     echo "Although the previous step seems to have failed, do you wish to continue with the remaining steps?"
     
-    if [ "$BUILD_CCM26TOFOAM" == "Yes" ]; then 
+    if [ "$BUILD_CCM26TOFOAM" == "Yes" -o "$BUILD_PARAVIEW" == "Yes" -o "$BUILD_QT" == "Yes" ]; then 
       echo "Missing steps are:"
       if [ "$BUILD_QT" == "Yes" ]; then echo "- Building Qt"; fi
       if [ "$BUILD_PARAVIEW" == "Yes" ]; then echo "- Building Paraview"; fi
@@ -936,14 +960,14 @@ function build_Qt()
     BUILD_QT_LOG="$WM_THIRD_PARTY_DIR/build_Qt.log"
     
     echo "------------------------------------------------------"
-    echo "Build PV3FoamReader for Paraview:"
+    echo "Build Qt ${QT_VERSION}:"
     echo "The build process is going to be logged in the file:"
     echo "  $BUILD_QT_LOG"
     echo "If you want to, you can follow the progress of this build"
     echo "process, by opening a new terminal and running:"
     echo "  tail -F $BUILD_QT_LOG"
     echo "Either way, please wait, this will take a while..."
-    bash -c "time ./makeQt" > "$BUILD_QT_LOG" 2>&1
+    bash -c "time ./makeQt --confirm-license=yes" > "$BUILD_QT_LOG" 2>&1
 
     if [ -e "$QT_PLATFORM_PATH/bin/qmake" ]; then
       echo "Build process finished successfully: Qt is ready to use for building Paraview."
@@ -1226,9 +1250,10 @@ if [ "$version" == "10.04" ]; then
 fi
 if [ "$version" == "8.04" ]; then
     BUILD_QT=Yes
+    BUILD_PARAVIEW=Yes
     dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
     --title "Non-optional setting detected!" \
-    --infobox "You are running Ubuntu $version. \n To ParaView properly work this script do a custom build of Qt" 5 70
+    --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom\nbuild of Qt and also build Paraview." 5 70
 fi
 if [ "$INSTALLMODE" == "server" ]; then
     BUILD_PARAVIEW=Yes
@@ -1238,6 +1263,17 @@ if [ "$INSTALLMODE" == "server" ]; then
     --title "Server Install settings" \
     --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70  
 fi
+
+#verifying Paraview Build options, just in case
+if [ "$BUILD_PARAVIEW" == "No" ]; then
+  if [ "$BUILD_PARAVIEW_WITH_MPI" == "Yes" -o "$BUILD_PARAVIEW_WITH_PYTHON" == "Yes" -o "$BUILD_PARAVIEW_WITH_GUI" == "No" ]; then
+      BUILD_PARAVIEW=Yes
+      dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+      --title "Non-optional setting detected!" \
+      --infobox "\nParaView will need to be built, since GUI is the pre-built version" 5 70
+  fi
+fi
+
 #GCC compiling settings
 GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
