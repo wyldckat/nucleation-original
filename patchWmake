@@ -28,7 +28,7 @@
 +# Emit time stamp, if so requested
 +#------------------------------------------------------------------------------
 +
-+if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_start_time fi
++if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_start_time; fi
 +
 +#------------------------------------------------------------------------------
  # Recurse the application directories tree
@@ -40,7 +40,7 @@
          ./Allwmake
 -        exit $?
 +        allwmake_error=$?
-+        if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time fi
++        if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time; fi
 +        exit $allwmake_error
      elif [ ! -d $MakeDir ]
      then
@@ -50,7 +50,7 @@
          $make -k -f $WM_DIR/MakefileApps FOAM_APPS="$FOAM_APPS"
 -        exit $?
 +        allwmake_error=$?
-+        if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time fi
++        if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time; fi
 +        exit $allwmake_error
      fi
  
@@ -68,7 +68,7 @@
  # echo "cmd=$cmd"
  exec $cmd
 +allwmake_error=$?
-+if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time fi
++if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time; fi
 +exit $allwmake_error
  
  #------------------------------------------------------------------------------

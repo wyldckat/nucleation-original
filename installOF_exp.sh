@@ -11,6 +11,7 @@
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
 #TODO 1 - Test building Qt, Paraview, PV3FoamReader and gcc
+#TODO 2 - Cancel in dialogs don't do anything :(
 
 #Code ---------------------------------------------------------
 
@@ -526,7 +527,7 @@ function define_packages_to_download()
 function install_ubuntu_packages()
 {
   #define which packages need to be installed
-  PACKAGES_TO_INSTALL="binutils-dev flex git-core build-essential python-dev libqt4-dev libreadline5-dev wget zlib1g-dev cmake"
+  PACKAGES_TO_INSTALL="binutils-dev flex git-core build-essential python-dev libreadline5-dev wget zlib1g-dev cmake"
 
   #for Ubuntu 8.04, a few more packages are needed
   isleftlarger_or_equal 8.10 $version
@@ -549,7 +550,12 @@ function install_ubuntu_packages()
   if [ "x$BUILD_GCC" == "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
   fi
-  
+
+  #install qt4-dev only if the custom build isn't used
+  if [ "$BUILD_QT" != "Yes" ]; then
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libqt4-dev"
+  fi
+
   #now remove the ones that are already installed
   prune_packages_to_install
   
@@ -708,7 +714,7 @@ function unpack_downloaded_files()
 function process_online_log_of_timings()
 {
   #TODO: this value is hard coded for now, since it should come from the output of our timmings script
-  #The total count of "make[.]" found in our build_Qt_log
+  #The total count of "make[.]" found in our build_Qt.log
   BUILD_QT_LAST_BUILD_COUNT=293
 }
 
@@ -1050,6 +1056,7 @@ function build_Qt_progress_dialog()
       kill $BUILD_QT_PID
       sleep 1
       if ps -p $BUILD_QT_PID > /dev/null; then
+        BUILD_QT_MUST_KILL="Done"
         break;
       fi
     else
@@ -1082,7 +1089,7 @@ function build_Qt_progress_dialog()
     fi
   done
   ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
-      --title "Building Qt" --gauge "Starting..." 15 60 $percent
+      --title "Building Qt" --gauge "Starting..." 25 80 $percent
 }
 
 #this indicates to the user that we have it under control...
@@ -1122,6 +1129,13 @@ function build_Qt()
     #track build progress
     percent=0
     build_Qt_progress_dialog
+    
+    #wait for kill code to change
+    if ps -p $BUILD_QT_PID > /dev/null || [ "x$BUILD_QT_MUST_KILL" != "x" ]; then
+      while [ "x$BUILD_QT_MUST_KILL" != "xDone" ]; do
+        sleep 1
+      done
+    fi
 
     #clear traps
     trap - SIGINT SIGQUIT SIGTERM
@@ -1415,18 +1429,20 @@ for setting in $PVSETTINGSOPTS ; do
   if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
 done
 
-if [ "$version" == "10.04" ]; then
+if [ "$version" == "10.04" -a "$BUILD_PARAVIEW" != "Yes" ]; then
     BUILD_PARAVIEW=Yes
     dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
     --title "Non-optional setting detected!" \
     --infobox "You are running Ubuntu $version. \n To ParaView properly work this script will do a custom build of ParaView and PV3FoamReader" 5 70
 fi
 if [ "$version" == "8.04" ]; then
+  if [ "$BUILD_PARAVIEW" != "Yes" -o "$BUILD_QT" != "Yes" ]; then
     BUILD_QT=Yes
     BUILD_PARAVIEW=Yes
     dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
     --title "Non-optional setting detected!" \
     --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom\nbuild of Qt and also build Paraview." 5 70
+  fi
 fi
 if [ "$INSTALLMODE" == "server" ]; then
     BUILD_PARAVIEW=Yes
@@ -1439,11 +1455,11 @@ fi
 
 #verifying Paraview Build options, just in case
 if [ "$BUILD_PARAVIEW" == "No" ]; then
-  if [ "$BUILD_PARAVIEW_WITH_MPI" == "Yes" -o "$BUILD_PARAVIEW_WITH_PYTHON" == "Yes" -o "$BUILD_PARAVIEW_WITH_GUI" == "No" ]; then
+  if [ "$BUILD_PARAVIEW_WITH_MPI" == "Yes" -o "$BUILD_PARAVIEW_WITH_PYTHON" == "Yes" -o "$BUILD_PARAVIEW_WITH_GUI" == "No" -o "$BUILD_QT" == "Yes" ]; then
       BUILD_PARAVIEW=Yes
       dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
       --title "Non-optional setting detected!" \
-      --infobox "\nParaView will need to be built, since GUI is the pre-built version" 5 70
+      --infobox "\nParaView will need to be built, since the pre-built version isn't enough\nfor the chosen options" 5 70
   fi
 fi
 
