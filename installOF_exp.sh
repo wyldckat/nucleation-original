@@ -30,8 +30,8 @@ set -e
 arch=`uname -m`
 version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$1/g`
 
-#FUNCTIONS SECTION ---------------------------------------------------------
 
+#FUNCTIONS SECTION ---------------------------------------------------------
 
 #-- UTILITY FUNCTIONS ------------------------------------------------------
 
@@ -121,11 +121,23 @@ function cd_openfoam()
 {
   cd "$PATHOF"
 }
+
+function monitor_sleep()
+{
+  count_secs=0
+  while ps -p $1 > /dev/null; do
+    sleep 1
+    count_secs=`expr $count_secs + 1`
+    if [ "$count_secs" == "$2" ]; then
+      break;
+    fi
+  done
+}
 #-- END UTILITY FUNCTIONS --------------------------------------------------
 
 #-- PATCHING FUNCTIONS -----------------------------------------------------
 
-
+#patch bashrc path so it will reflect the chosen $PATHOF
 function patchBashrcPath()
 {
 tmpVar=$PWD
@@ -684,6 +696,13 @@ function unpack_downloaded_files()
   echo "------------------------------------------------------"
 }
 
+function process_online_log_of_timings()
+{
+  #TODO: this value is hard coded for now, since it should come from the output of our timmings script
+  #The total count of "make[.]" found in our build_Qt_log
+  BUILD_QT_LAST_BUILD_COUNT=293
+}
+
 #git clone OpenFOAM
 function OpenFOAM_git_clone()
 {
@@ -1008,6 +1027,62 @@ function OpenFOAM_git_pull()
   git pull
 }
 
+#provide the user with a progress bar and timings for building Qt
+function build_Qt_progress_dialog()
+{
+  ( #while true is used as a containment cycle...
+  while true;
+  do
+    if [ "x$BUILD_QT_MUST_KILL" == "xYes" ]; then
+      echo $percent
+      echo "XXX"
+      echo -e "\n\nKill code issued... please wait..."
+      echo "XXX"
+      kill $BUILD_QT_PID
+      sleep 1
+      if ps -p $BUILD_QT_PID > /dev/null; then
+        break;
+      fi
+    else
+      BUILD_QT_MAKECOUNT=`grep 'make\[.\]' build_Qt.log | wc -l`
+      nowpercent=`expr $BUILD_QT_MAKECOUNT \* 100 / $BUILD_QT_LAST_BUILD_COUNT`
+      if [ "$nowpercent" != "$percent" ]; then
+        percent=$nowpercent
+        BUILD_QT_UPDATE_TIME=`date`
+      fi
+      echo $percent
+      echo "XXX"
+      echo "Build Qt ${QT_VERSION}:"
+      echo "The build process is going to be logged in the file:"
+      echo "  $BUILD_QT_LOG"
+      echo "If you want to, you can follow the progress of this build"
+      echo "process, by opening a new terminal and running:"
+      echo "  tail -F $BUILD_QT_LOG"
+      echo "Either way, please wait, this will take a while..."
+      echo -e "Qt started to build at:\n\t$BUILD_QT_START_TIME\n"
+      echo -e "Last progress update made at:\n\t$BUILD_QT_UPDATE_TIME"
+      echo "XXX"
+    fi
+
+    #this provides a better monitorization of the process itself... i.e., if it has already stopped!
+    #30 second update
+    monitor_sleep $BUILD_QT_PID 30
+
+    if ! ps -p $BUILD_QT_PID > /dev/null; then
+      break;
+    fi
+  done
+  ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+      --title "Building Qt" --gauge "Starting..." 15 60 $percent
+}
+
+#this indicates to the user that we have it under control...
+function build_Qt_ctrl_c_triggered()
+{
+  BUILD_QT_MUST_KILL="Yes"
+  build_Qt_progress_dialog
+}
+
 function build_Qt()
 {
   if [ "$BUILD_QT" == "Yes" ]; then
@@ -1026,21 +1101,29 @@ function build_Qt()
     
     BUILD_QT_LOG="$WM_THIRD_PARTY_DIR/build_Qt.log"
     
+    #set up traps...
+    trap build_Qt_ctrl_c_triggered SIGINT SIGQUIT SIGTERM
+
+    #launch makeQt asynchronously
+    bash -c "time ./makeQt --confirm-license=yes" > "$BUILD_QT_LOG" 2>&1 &
+    BUILD_QT_PID=$!
+    BUILD_QT_START_TIME=`date`
+    BUILD_QT_UPDATE_TIME=$BUILD_QT_START_TIME
+
+    #track build progress
+    percent=0
+    build_Qt_progress_dialog
+
+    #clear traps
+    trap - SIGINT SIGQUIT SIGTERM
+    
+    clear
     echo "------------------------------------------------------"
     echo "Build Qt ${QT_VERSION}:"
-    echo "The build process is going to be logged in the file:"
-    echo "  $BUILD_QT_LOG"
-    echo "If you want to, you can follow the progress of this build"
-    echo "process, by opening a new terminal and running:"
-    echo "  tail -F $BUILD_QT_LOG"
-    echo "Either way, please wait, this will take a while..."
-    bash -c "time ./makeQt --confirm-license=yes" > "$BUILD_QT_LOG" 2>&1
-
-    #TODO: monitor progress, by counting the number of make[?] there have been so far!
-    #grep 'make\[.\]' build_Qt.log | wc -l
-
     if [ -e "$QT_PLATFORM_PATH/bin/qmake" ]; then
-      echo "Build process finished successfully: Qt is ready to use for building Paraview."
+      echo -e "Qt started to build at:\n\t$BUILD_QT_START_TIME\n"
+      echo -e "Building Qt finished successfully at:\n\t`date`"
+      echo "Qt is ready to use for building Paraview."
     else
       echo "Build process didn't finished with success. Please check the log file for more information."
       echo "You can post it at this forum thread:"
@@ -1476,6 +1559,9 @@ if [ "$INSTALLMODE" != "update" ]; then
   
   #Unpack downloaded files
   unpack_downloaded_files
+  
+  #process our timming log, in order to provide progress and estimated timings
+  process_online_log_of_timings
 
   #git clone OpenFOAM
   OpenFOAM_git_clone
