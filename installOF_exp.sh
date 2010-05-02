@@ -10,8 +10,7 @@
 #
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
-#TODO 1 - Add Dialogs for building Qt and Paraview
-#TODO 2 - Test building Qt, Paraview, PV3FoamReader and gcc
+#TODO 1 - Test building Qt, Paraview, PV3FoamReader and gcc
 
 #Code ---------------------------------------------------------
 
@@ -125,6 +124,39 @@ function cd_openfoam()
 #-- END UTILITY FUNCTIONS --------------------------------------------------
 
 #-- PATCHING FUNCTIONS -----------------------------------------------------
+
+
+function patchBashrcPath()
+{
+tmpVar=$PWD
+cd_openfoam
+cd OpenFOAM-1.6.x/etc/
+
+echo '--- ../bashrc 2010-05-02 13:08:09.905803554 +0200
++++ bashrc  2010-05-02 13:18:36.991912551 +0200
+@@ -43,7 +43,8 @@
+ #
+ # Location of FOAM installation
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-foamInstall=$HOME/$WM_PROJECT
++foamInstall='$PATHOF'
++# foamInstall=$HOME/$WM_PROJECT
+ # foamInstall=~$WM_PROJECT
+ # foamInstall=/usr/local/$WM_PROJECT
+ # foamInstall=/opt/$WM_PROJECT
+@@ -68,7 +69,7 @@
+ # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ export WM_PROJECT_INST_DIR=$FOAM_INST_DIR
+ export WM_PROJECT_DIR=$WM_PROJECT_INST_DIR/$WM_PROJECT-$WM_PROJECT_VERSION
+-export WM_PROJECT_USER_DIR=$HOME/$WM_PROJECT/$USER-$WM_PROJECT_VERSION
++export WM_PROJECT_USER_DIR=$FOAM_INST_DIR/$USER-$WM_PROJECT_VERSION
+ 
+ 
+ # Location of third-party software' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
 
 #Patch to compile using multicore
 function patchBashrcMultiCore()
@@ -477,8 +509,8 @@ function install_ubuntu_packages()
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL doxygen graphviz"
   fi
 
-  #TODO! for building gcc, these are necessary
-  if [ "$BUILD_GCC" == "Yes" ]; then
+  #for building gcc, these are necessary
+  if [ "x$BUILD_GCC" == "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
   fi
   
@@ -676,6 +708,9 @@ function apply_patches_fixes()
   echo "------------------------------------------------------"
   echo "Applying patches to bashrc and settings.sh ..."
   echo "------------------------------------------------------"
+  if [ "x$HOME/OpenFOAM" != "x$PATHOF" ]; then #fix OpenFOAM base path in bashrc
+    patchBashrcPath
+  fi
   patchBashrcMultiCore #for faster builds on multi-core machines
   #proper fix for running in 32bit
   if [ x`echo $arch | grep -e "i.86"` != "x" ]; then
@@ -731,7 +766,7 @@ function add_openfoam_to_bashrc()
 #build gcc that comes with OpenFOAM
 function build_openfoam_gcc()
 {
-  if [ "$BUILD_GCC" == "Yes" ]; then
+  if [ "x$BUILD_GCC" == "xYes" ]; then
     
     #set up environment, just in case we forget about it!
     if [ x"$WM_PROJECT_DIR" == "x" ]; then
@@ -1035,6 +1070,12 @@ function build_Paraview()
       echo "Either way, please wait, this will take a while..."
       bash -c "time ./makeParaView $PARAVIEW_BUILD_OPTIONS" > "$PARAVIEW_BUILD_LOG" 2>&1
 
+      #TODO: commented line code is for later using in a gauge dialog for monitoring Paraview build process
+      #TODO: will have to use & with bash and then use BUILD_PARAVIEW_PID=$!
+      #TODO: also use trap SIGINT SIGTERM or just INT for trapping Ctrl+C and doing a "remote" killing of the launched bash.
+      #TODO: and don't forget to monitor if it's still running to terminate while loop!
+      # tail -n 1 "$PARAVIEW_BUILD_LOG" | grep "^\[" | sed 's/^\[\([ 0-9]*\).*/\1/'
+
       if [ -e "$ParaView_DIR/bin/paraview" ]; then
         echo "Build process finished successfully: Paraview is ready to use."
       else
@@ -1043,7 +1084,7 @@ function build_Paraview()
         echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
         echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
         BUILDING_PARAVIEW_FAILED="Yes"
-        #TODO: do something with this variable
+        #TODO: do something with BUILDING_PARAVIEW_FAILED
       fi
       echo "------------------------------------------------------"
 
@@ -1101,7 +1142,7 @@ function build_PV3FoamReader()
         echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
         echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
         PV3FOAMREADERFAILED="Yes"
-        #TODO: do something with this variable PV3FOAMREADERFAILED ?
+        #TODO: do something with PV3FOAMREADERFAILED
       fi
       echo "------------------------------------------------------"
     fi
@@ -1142,7 +1183,7 @@ function build_ccm26ToFoam()
       echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
       echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
       CCM26INSTALLFAILED="Yes"
-      #TODO: do something with this variable CCM26INSTALLFAILED ?
+      #TODO: do something with CCM26INSTALLFAILED
     fi
     echo "------------------------------------------------------"
   fi
@@ -1275,18 +1316,30 @@ if [ "$BUILD_PARAVIEW" == "No" ]; then
 fi
 
 #GCC compiling settings
-GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
---checklist "Choose Install settings: < Space to select ! >" 10 50 2 \
-1 "Build GCC ? -BETA!" off \
-2 "Build GCC in 64bit mode only ? -BETA!" off )
-BUILD_GCC=No
-BUILD_GCC_STRICT_64BIT=No #this is optionable for x86_64 only
-#Take care of unpack
-for setting in $GCCSETTINGSOPTS ; do
-  if [ $setting == 1 ] ; then BUILD_GCC=Yes ; fi
-  if [ $setting == 2 ] ; then BUILD_GCC_STRICT_64BIT=Yes ; fi
-done
+if [ "$USE_OF_GCC" == "Yes" ]; then
+  if [ "$arch" == "x86_64" ]; then
+    GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
+    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+    --checklist "Choose Install settings: < Space to select ! >" 10 60 2 \
+    1 "Build GCC? (otherwise use pre-compiled version)" off \
+    2 "Build GCC in 64bit mode only?" off )
+
+  elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
+  
+    GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
+    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+    --checklist "Choose Install settings: < Space to select ! >" 10 60 1 \
+    1 "Build GCC? (otherwise use pre-compiled version)" off )
+  fi
+
+  BUILD_GCC=No
+  BUILD_GCC_STRICT_64BIT=No #this is optionable for x86_64 only
+  #Take care of unpack
+  for setting in $GCCSETTINGSOPTS ; do
+    if [ $setting == 1 ] ; then BUILD_GCC=Yes ; fi
+    if [ $setting == 2 ] ; then BUILD_GCC_STRICT_64BIT=Yes ; fi
+  done
+fi
 
 #Enable this script's logging functionality ...
 if [ "$LOG_OUTPUTS" == "Yes" ]; then
@@ -1314,7 +1367,7 @@ if [ "$mirror" == "findClosest" ]; then
   clear
 
   #show an empty dialog info box, to reduce flickering
-  dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+  dialog --sleep 0 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
     --title "Mirror selector" \
     --infobox " " 17 50
 
