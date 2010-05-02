@@ -367,7 +367,8 @@ echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
 +        ;;
      -qmake)
          [ "$#" -ge 2 ] || usage "'$1' option requires an argument"
-         export QMAKE_PATH=$2' | patch -p0
+         export QMAKE_PATH=$2
+' | patch -p0
 cd $tmpVar
 unset tmpVar
 }
@@ -621,10 +622,18 @@ function do_wget()
 {
   #either get the whole file, or try completing it, in case the user 
   #used previously Ctrl+C
-  if [ ! -e "$2" ]; then
-    wget "$4" "$1""$2""$3" 2>&1
+  if [ "x$4" != "x" ]; then
+    if [ ! -e "$2" ]; then
+      wget "$4" "$1""$2""$3" 2>&1
+    else
+      wget -c "$4" "$1""$2""$3" 2>&1
+    fi
   else
-    wget -c "$4" "$1""$2""$3" 2>&1
+    if [ ! -e "$2" ]; then
+      wget "$1""$2""$3" 2>&1
+    else
+      wget -c "$1""$2""$3" 2>&1
+    fi
   fi
 }
 
@@ -1489,12 +1498,8 @@ internap 'US' )
 if [ "$mirror" == "findClosest" ]; then
   clear
 
-  #show an empty dialog info box, to reduce flickering
-  dialog --sleep 0 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-    --title "Mirror selector" \
-    --infobox " " 17 50
-
-  (echo "Searching for the closest mirror..."
+  (
+    echo "Searching for the closest mirror..."
     echo "It can take from 10s to 90s (estimated)..."
     echo "--------------------"
     echo "Warning: This could provide a fake closest!"
@@ -1513,12 +1518,25 @@ if [ "$mirror" == "findClosest" ]; then
     echo "*---Mirror picked: $mirrorf" ) > tempmirror.log &
 
   mirror=
+  mirror_total_count=10   # it already includes the mirror picked line!
+  mirror_initial_line_count=5
+  percent=0
+  (
   while [ "$mirror" == "" ] ; do
     mirror=`grep "picked:" tempmirror.log | cut -c20-`
-    dialog --sleep 1 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-    --title "Mirror selector" \
-    --infobox "`cat tempmirror.log`" 17 50
+    percent=`cat tempmirror.log | wc -l`
+    percent=`expr \( $percent - $mirror_initial_line_count \) \* 100 / $mirror_total_count`
+    echo $percent
+    echo "XXX"
+    echo -e "`cat tempmirror.log`"
+    echo "XXX"
+    sleep 1
   done
+  ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+      --title "Mirror selector" --gauge "Starting..." 20 60 $percent
+  
+  # due to the sub-shell execution, have to get again the mirror's name
+  mirror=`grep "picked:" tempmirror.log | cut -c20-`
   rm -f tempmirror.log
 fi
 clear

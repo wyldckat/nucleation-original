@@ -1,35 +1,46 @@
---- ../../wmake	2010-05-02 17:25:06.000000000 +0100
-+++ ./wmake	2010-05-02 17:41:37.000000000 +0100
-@@ -152,6 +152,17 @@
+--- ../../wmake
++++ ./wmake
+@@ -55,6 +55,20 @@ USAGE
+     exit 1
+ }
+ 
++show_start_time() {
++    REL_PWD=`echo $PWD | sed 's='$WM_PROJECT_INST_DIR'/=='`
++    NOW_DATESECONDS=`date +%s`
++    echo "WMAKE timing start: PWD='$REL_PWD' Time Stamp=$NOW_DATESECONDS"
++    unset REL_PWD NOW_DATESECONDS
++}
++
++show_end_time() {
++    REL_PWD=`echo $PWD | sed 's='$WM_PROJECT_INST_DIR'/=='`
++    NOW_DATESECONDS=`date +%s`
++    echo "WMAKE timing end: PWD='$REL_PWD' Time Stamp=$NOW_DATESECONDS"
++    unset REL_PWD NOW_DATESECONDS
++}
++
+ # provide immediate help, even if none of the environment is set
+ if [ "$1" = "-h" -o "$1" = "-help" ]
+ then
+@@ -152,6 +166,12 @@ fi
  
  
  #------------------------------------------------------------------------------
 +# Emit time stamp, if so requested
 +#------------------------------------------------------------------------------
 +
-+if [ x"$WM_DO_TIMINGS" == "xYes" ]
-+then
-+    REL_PWD=`echo $PWD | sed 's='$WM_PROJECT_DIR'/=='`
-+    echo "wmake timing start: PWD='$REL_PWD' Time Stamp=`date +$s`"
-+    unset REL_PWD
-+fi
++if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_start_time fi
 +
 +#------------------------------------------------------------------------------
  # Recurse the application directories tree
  #------------------------------------------------------------------------------
  
-@@ -160,14 +171,28 @@
+@@ -160,14 +180,18 @@ then
      if [ -e Allwmake ]
      then
          ./Allwmake
 -        exit $?
 +        allwmake_error=$?
-+        if [ x"$WM_DO_TIMINGS" == "xYes" ]
-+        then
-+            REL_PWD=`echo $PWD | sed 's='$WM_PROJECT_DIR'/=='`
-+            echo "wmake timing end: PWD='$REL_PWD' Time Stamp=`date +$s`"
-+            unset REL_PWD
-+        fi
++        if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time fi
 +        exit $allwmake_error
      elif [ ! -d $MakeDir ]
      then
@@ -39,17 +50,12 @@
          $make -k -f $WM_DIR/MakefileApps FOAM_APPS="$FOAM_APPS"
 -        exit $?
 +        allwmake_error=$?
-+        if [ x"$WM_DO_TIMINGS" == "xYes" ]
-+        then
-+            REL_PWD=`echo $PWD | sed 's='$WM_PROJECT_DIR'/=='`
-+            echo "wmake timing end: PWD='$REL_PWD' Time Stamp=`date +$s`"
-+            unset REL_PWD
-+        fi
++        if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time fi
 +        exit $allwmake_error
      fi
  
      # This is the end of the recursion down the application directories tree
-@@ -234,7 +259,6 @@
+@@ -234,7 +258,6 @@ then
      exit $retVal
  fi
  
@@ -57,17 +63,12 @@
  #------------------------------------------------------------------------------
  # make the object files and link
  #------------------------------------------------------------------------------
-@@ -242,5 +266,13 @@
+@@ -242,5 +265,8 @@ fi
  cmd="$make -f $WM_DIR/Makefile MAKE_DIR=$MakeDir INCLUDE_DEPS=$OBJECTS_DIR/includeDeps $makeOption"
  # echo "cmd=$cmd"
  exec $cmd
 +allwmake_error=$?
-+if [ x"$WM_DO_TIMINGS" == "xYes" ]
-+then
-+    REL_PWD=`echo $PWD | sed 's='$WM_PROJECT_DIR'/=='`
-+    echo "wmake timing end: PWD='$REL_PWD' Time Stamp=`date +$s`"
-+    unset REL_PWD
-+fi
++if [ "x$WM_DO_TIMINGS" = "xYes" ]; then show_end_time fi
 +exit $allwmake_error
  
  #------------------------------------------------------------------------------
