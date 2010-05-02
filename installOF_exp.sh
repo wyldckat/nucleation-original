@@ -11,7 +11,8 @@
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
 #TODO 1 - Test building Qt, Paraview, PV3FoamReader and gcc
-#TODO 2 - Cancel in dialogs don't do anything :(
+#TODO 2 - Cancel button in dialogs don't do anything... either use "--no-cancel" or do something with it
+#TODO 3 - Some libraries are missing for building Qt 4.3.5 in Ubuntu 10.04
 
 #Code ---------------------------------------------------------
 
@@ -628,19 +629,25 @@ function do_wget()
 {
   #either get the whole file, or try completing it, in case the user 
   #used previously Ctrl+C
-  if [ "x$4" != "x" ]; then
+  wget_string="$1$2"
+  if [ "x$3" != "x" -a "x$3" != "x " ]; then
+    wget_string="$wget_string$3"
+  fi
+
+  if [ "x$4" != "x" -a "x$4" != "x " ]; then
     if [ ! -e "$2" ]; then
-      wget "$4" "$1""$2""$3" 2>&1
+      wget "$4" "$wget_string" 2>&1
     else
-      wget -c "$4" "$1""$2""$3" 2>&1
+      wget -c "$4" "$wget_string" 2>&1
     fi
   else
     if [ ! -e "$2" ]; then
-      wget "$1""$2""$3" 2>&1
+      wget "$wget_string" 2>&1
     else
-      wget -c "$1""$2""$3" 2>&1
+      wget -c "$wget_string" 2>&1
     fi
   fi
+  unset wget_string
 }
 
 #Download necessary files
@@ -688,17 +695,27 @@ function unpack_downloaded_files()
   
   #check if $THIRDPARTY_BIN is provided, because one could want to build from sources
   if [ "x$THIRDPARTY_BIN" != "x" ]; then 
+    cd_openfoam
     tar xfz $THIRDPARTY_BIN
   fi
   
   #needed for Ubuntu 8.04 x86_64
   if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then 
+    cd_openfoam
     tar xfz $THIRDPARTY_BIN_CMAKE ThirdParty-1.6/cmake-2.6.4
   fi
   
   if [ "$BUILD_QT" == "Yes" ]; then
+    cd_openfoam
     cd ThirdParty-1.6
     tar xjf ../$QT_PACKAGEFILE
+  fi
+
+  if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
+    cd_openfoam
+    cd ThirdParty-1.6
+    ln -s ../$CCMIO_PACKAGE $CCMIO_PACKAGE
+    #NOTE: unpacking will be done by the AllwmakeLibccmio script
   fi
 
   #copy modified makeGcc to here
@@ -895,7 +912,13 @@ function allwmake_openfoam()
   echo "Started at: `date`"
   echo "------------------------------------------------------"
   export WM_DO_TIMINGS="Yes"
-  bash -c "time wmake all $BUILD_DOCUMENTATION > make.log 2>&1" 2>&1
+  bash -c "time wmake all > make.log 2>&1" 2>&1
+  if [ "x$BUILD_DOCUMENTATION" != "x" ]; then
+    cd doc
+    echo "Now it's going to build the documentation..."
+    bash -c "time wmake all >> make.log 2>&1" 2>&1
+    cd ..
+  fi
   export WM_DO_TIMINGS=
   #bash -c is the only way I got for getting time results straight to display and also logged
   echo "Build complete at: `date`"
