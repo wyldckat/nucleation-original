@@ -312,8 +312,8 @@ tmpVar=$PWD
 cd_openfoam
 cd ThirdParty-1.6/
 
-if [ -e "../patchMPFR" ]; then
-  patch -p1 < ../patchMPFR
+if [ -e "$PATHOF/$MPFRPATCHFILE" ]; then
+  patch -p1 < $PATHOF/$MPFRPATCHFILE
 fi
 
 cd $tmpVar
@@ -378,6 +378,19 @@ echo '--- ../makeQt 2010-04-26 23:10:03.000000000 +0100
  
      if [ -r /proc/cpuinfo ]
      then' | patch -p0
+
+cd $tmpVar
+unset tmpVar
+}
+
+#Patch wmake to provide timings upon request via WM_DO_TIMINGS
+function patchWmakeForTimings()
+{
+tmpVar=$PWD
+cd_openfoam
+cd OpenFOAM-1.6.x/wmake/
+
+patch -p0 < "$PATHOF/$WMAKEPATCHFILE"
 
 cd $tmpVar
 unset tmpVar
@@ -479,10 +492,20 @@ function define_packages_to_download()
   #modified makeGcc for building gcc that comes with OpenFOAM
   GCCMODED_MAKESCRIPT="makeGcc433"
   
+  #patch file for tweaking timing option into wmake
+  WMAKEPATCHFILE="patchWmake"
+  
   if [ "$BUILD_QT" == "Yes" ]; then
     QT_VERSION=4.3.5
     QT_BASEURL="ftp://ftp.trolltech.com/qt/source/"
     QT_PACKAGEFILE="qt-x11-opensource-src-$QT_VERSION.tar.bz2"
+  fi
+  
+  if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
+    CCMIO_PACKAGE_VERSION=libccmio-2.6.1
+    CCMIO_PACKAGE="${CCMIO_PACKAGE_VERSION}.tar.gz"
+    CCMIO_BASEURL="https://wci.llnl.gov/codes/visit/3rd_party/"
+    CCMIO_BASEURL_EXTRA_PRE="--no-check-certificate"
   fi
 }
 
@@ -581,14 +604,15 @@ function create_OpenFOAM_folder()
 # the 1st argument is the base address
 # the 2nd argument is the file name
 # the 3rd argument is the rest of the URL address
+# the 4th argument is additional arguments to be given to wget before the URL
 function do_wget()
 {
   #either get the whole file, or try completing it, in case the user 
   #used previously Ctrl+C
   if [ ! -e "$2" ]; then
-    wget "$1""$2""$3" 2>&1
+    wget "$4" "$1""$2""$3" 2>&1
   else
-    wget -c "$1""$2""$3" 2>&1
+    wget -c "$4" "$1""$2""$3" 2>&1
   fi
 }
 
@@ -615,9 +639,14 @@ function download_files()
   #download patch files that didn't fit in this script
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
 
   if [ "$BUILD_QT" == "Yes" ]; then
     do_wget "$QT_BASEURL" "$QT_PACKAGEFILE"
+  fi
+
+  if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
+    do_wget "$CCMIO_BASEURL" "$CCMIO_PACKAGE" " " "$CCMIO_BASEURL_EXTRA_PRE"
   fi
 }
 
@@ -728,7 +757,8 @@ function apply_patches_fixes()
     patchParaFoamScript
   fi
   
-  #apply patches for MPFR, makeQt script, makeParaView script and libccmio
+  #apply patches for wmake script, MPFR library, makeQt script, makeParaView script and libccmio
+  patchWmakeForTimings
   patchMPFRMissingFiles
   patchMakeQtScript
   patchMakeParaViewScript
@@ -830,7 +860,9 @@ function allwmake_openfoam()
   echo "Total time that it did take will be shown upon completion."
   echo "Started at: `date`"
   echo "------------------------------------------------------"
-  bash -c "time ./Allwmake $BUILD_DOCUMENTATION > make.log 2>&1" 2>&1
+  export WM_DO_TIMINGS="Yes"
+  bash -c "time wmake all $BUILD_DOCUMENTATION > make.log 2>&1" 2>&1
+  export WM_DO_TIMINGS=
   #bash -c is the only way I got for getting time results straight to display and also logged
   echo "Build complete at: `date`"
 }
@@ -1004,6 +1036,9 @@ function build_Qt()
     echo "Either way, please wait, this will take a while..."
     bash -c "time ./makeQt --confirm-license=yes" > "$BUILD_QT_LOG" 2>&1
 
+    #TODO: monitor progress, by counting the number of make[?] there have been so far!
+    #grep 'make\[.\]' build_Qt.log | wc -l
+
     if [ -e "$QT_PLATFORM_PATH/bin/qmake" ]; then
       echo "Build process finished successfully: Qt is ready to use for building Paraview."
     else
@@ -1072,7 +1107,8 @@ function build_Paraview()
 
       #TODO: commented line code is for later using in a gauge dialog for monitoring Paraview build process
       #TODO: will have to use & with bash and then use BUILD_PARAVIEW_PID=$!
-      #TODO: also use trap SIGINT SIGTERM or just INT for trapping Ctrl+C and doing a "remote" killing of the launched bash.
+      #TODO: also use trap "command" SIGINT SIGTERM or just INT for trapping Ctrl+C and doing a "remote" killing of the launched bash.
+      #TODO: use trap without command and with sig's to disable the set traps!
       #TODO: and don't forget to monitor if it's still running to terminate while loop!
       # tail -n 1 "$PARAVIEW_BUILD_LOG" | grep "^\[" | sed 's/^\[\([ 0-9]*\).*/\1/'
 
@@ -1132,7 +1168,9 @@ function build_PV3FoamReader()
 
       bash -c "time ./Allwclean" > "$PV3FOAMREADER_BUILD_LOG" 2>&1
       echo -e "\n\n" >> "$PV3FOAMREADER_BUILD_LOG"
-      bash -c "time ./Allwmake" >> "$PV3FOAMREADER_BUILD_LOG" 2>&1
+      export WM_DO_TIMINGS="Yes"
+      bash -c "time wmake all" >> "$PV3FOAMREADER_BUILD_LOG" 2>&1
+      export WM_DO_TIMINGS=
 
       if [ -e "$FOAM_LIBBIN/libvtkPV3Foam.so" -a -e "$FOAM_LIBBIN/libPV3FoamReader.so" -a -e "$FOAM_LIBBIN/libPV3FoamReader_SM.so" ]; then
         echo "Build process finished successfully: paraFoam is ready to use."
@@ -1158,7 +1196,7 @@ function build_ccm26ToFoam()
       setOpenFOAMEnv
     fi
 
-    cd $WM_PROJECT_DIR
+    cd "$FOAM_APP/utilities/mesh/conversion/Optional/"
 
     BUILD_CCM26TOFOAM_LOG="$WM_PROJECT_DIR/build_ccm26.log"
 
@@ -1173,7 +1211,9 @@ function build_ccm26ToFoam()
     echo "  tail -F $BUILD_CCM26TOFOAM_LOG"
     echo "Either way, please wait, this will take a while..."
 
-    bash -c "time $FOAM_APP/utilities/mesh/conversion/Optional/Allwmake" > "$BUILD_CCM26TOFOAM_LOG" 2>&1
+    export WM_DO_TIMINGS="Yes"
+    bash -c "time wmake all" > "$BUILD_CCM26TOFOAM_LOG" 2>&1
+    export WM_DO_TIMINGS=
 
     if [ -e "$FOAM_APPBIN/ccm26ToFoam" ]; then
       echo "Build process finished successfully: ccm26ToFoam is ready to use."
