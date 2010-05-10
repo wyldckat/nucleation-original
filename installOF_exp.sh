@@ -245,7 +245,16 @@ echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
 +compilerInstall=System
  
  case "${compilerInstall:-OpenFOAM}" in
- OpenFOAM)' | patch -p0
+ OpenFOAM)
+@@ -129,6 +132,8 @@
+     compilerBin=$WM_COMPILER_DIR/bin
+     compilerLib=$WM_COMPILER_DIR/lib$WM_COMPILER_LIB_ARCH:$WM_COMPILER_DIR/lib
+     ;;
++System)
++    export WM_COMPILER_DIR=/usr
+ esac
+ 
+ if [ -d "$compilerBin" ]' | patch -p0
 
 cd $tmpVar
 unset tmpVar
@@ -537,7 +546,7 @@ function install_ubuntu_packages()
   #for Ubuntu 10.04, a few more packages are needed
   isleftlarger_or_equal $version 10.04
   if [ x"$?" == x"1" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libxt-dev"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
   fi
 
   #for documentation, these are necessary
@@ -550,9 +559,9 @@ function install_ubuntu_packages()
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
   fi
 
-  #install qt4-dev only if the custom build isn't used
+  #install qt4-dev and qt4-dev-tools only if the custom build isn't used
   if [ "$BUILD_QT" != "Yes" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libqt4-dev"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libqt4-dev qt4-dev-tools"
   fi
 
   #now remove the ones that are already installed
@@ -846,6 +855,18 @@ function apply_patches_fixes()
     ln -s `locate libgcc_s.so. | grep "^/lib" | head -n 1` libgcc_s.so.1
     echo "Fix up done"
     echo "------------------------------------------------------"
+  fi
+  
+  #fix Paraview's help file reference, for when Paraview isn't built
+  if [ "$BUILD_PARAVIEW" != "Yes" ]; then
+    cd_openfoam
+    if [ x`echo $arch | grep -e "i.86"` != "x" ]; then
+      cd ThirdParty-1.6/paraview-3.6.1/platforms/linuxGcc/bin
+    elif [ "$arch" == "x86_64" ]; then
+      cd ThirdParty-1.6/paraview-3.6.1/platforms/linux64Gcc/bin
+    fi
+    mv pqClientDocFinder.txt pqClientDocFinder_orig.txt
+    cat pqClientDocFinder_orig.txt | sed 's/\/home\/dm2\/henry\/OpenFOAM/'${PATHOF}'/' > ./pqClientDocFinder.txt
   fi
 
   cd_openfoam #this is a precautionary measure
@@ -1206,6 +1227,7 @@ function continue_after_failed_openfoam()
 {
   if [ x"$FOAMINSTALLFAILED" != "x" ]; then
     FOAMINSTALLFAILED_BUTCONT="No"
+    echo -e "\n------------------------------------------------------\n"
     echo "Although the previous step seems to have failed, do you wish to continue with the remaining steps?"
     
     if [ "$BUILD_CCM26TOFOAM" == "Yes" -o "$BUILD_PARAVIEW" == "Yes" -o "$BUILD_QT" == "Yes" ]; then 
@@ -1221,6 +1243,7 @@ function continue_after_failed_openfoam()
       yes | y | Y | Yes | YES) FOAMINSTALLFAILED_BUTCONT="Yes";;
     esac
     unset casestat
+    echo "------------------------------------------------------"
   fi
 }
 
