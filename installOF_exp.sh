@@ -133,6 +133,11 @@ function monitor_sleep()
     fi
   done
 }
+
+function killgroup()
+{
+  kill -SIGABRT $1
+}
 #-- END UTILITY FUNCTIONS --------------------------------------------------
 
 #-- PATCHING FUNCTIONS -----------------------------------------------------
@@ -350,6 +355,15 @@ cd ThirdParty-1.6/
   
 echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
 +++ ./makeParaView  2010-04-18 21:50:31.609831213 +0100
+@@ -45,7 +45,7 @@
+ # note: script will try to determine the appropriate python library.
+ #       If it fails, specify the path using the PYTHON_LIBRARY variable
+ withPYTHON=false
+-PYTHON_LIBRARY=""
++PYTHON_LIBRARY="/usr/lib/libpython2.6.so"
+ # PYTHON_LIBRARY="/usr/lib64/libpython2.6.so.1.0"
+ 
+ # MESA graphics support:
 @@ -75,6 +75,7 @@
    -python       with python (if not already enabled)
    -mesa         with mesa (if not already enabled)
@@ -546,7 +560,7 @@ function install_ubuntu_packages()
   #for Ubuntu 10.04, a few more packages are needed
   isleftlarger_or_equal $version 10.04
   if [ x"$?" == x"1" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
   fi
 
   #for documentation, these are necessary
@@ -942,11 +956,11 @@ function build_gcc_progress_dialog()
       echo $percent
       echo "XXX"
       echo -e "\n\nKill code issued... please wait..."
+      echo -e "NOTE: The kill code will take a few seconds \nto affect all child processes."
       echo "XXX"
-      kill $BUILD_GCC_PID
+      killgroup $BUILD_GCC_PID
       sleep 1
       if ! ps -p $BUILD_GCC_PID > /dev/null; then
-        BUILD_GCC_MUST_KILL="Done"
         break;
       fi
     else
@@ -1028,9 +1042,8 @@ function build_openfoam_gcc()
     
     #wait for kill code to change
     if ps -p $BUILD_GCC_PID > /dev/null || [ "x$BUILD_GCC_MUST_KILL" != "x" ]; then
-      while [ "x$BUILD_GCC_MUST_KILL" != "xDone" ]; do
-        sleep 1
-      done
+      echo "NOTE: The kill code will take a few seconds to affect all child processes."
+      sleep 1.5
     fi
 
     #clear traps
@@ -1065,11 +1078,11 @@ function build_awopenfoam_progress_dialog()
       echo $percent
       echo "XXX"
       echo -e "\n\nKill code issued... please wait..."
+      echo -e "NOTE: The kill code will take a few seconds \nto affect all child processes."
       echo "XXX"
-      kill $BUILD_AWOPENFOAM_PID
+      killgroup $BUILD_AWOPENFOAM_PID
       sleep 1
       if ! ps -p $BUILD_AWOPENFOAM_PID > /dev/null; then
-        BUILD_AWOPENFOAM_MUST_KILL="Done"
         break;
       fi
     else
@@ -1202,9 +1215,8 @@ function allwmake_openfoam()
   
   #wait for kill code to change
   if ps -p $BUILD_AWOPENFOAM_PID > /dev/null || [ "x$BUILD_AWOPENFOAM_MUST_KILL" != "x" ]; then
-    while [ "x$BUILD_AWOPENFOAM_MUST_KILL" != "xDone" ]; do
-      sleep 1
-    done
+    echo "NOTE: The kill code will take a few seconds to affect all child processes."
+    sleep 1.5
   fi
 
   #clear traps
@@ -1324,6 +1336,7 @@ function fix_tutorials()
 #whether it goes well or not
 function final_messages_for_clean_install()
 {
+  echo "------------------------------------------------------"
   if [ x"$FOAMINSTALLFAILED" == "x" ]; then
 
     #If using bash alias, inform to use it to run!
@@ -1376,11 +1389,11 @@ function build_Qt_progress_dialog()
       echo $percent
       echo "XXX"
       echo -e "\n\nKill code issued... please wait..."
+      echo -e "NOTE: The kill code will take a few seconds \nto affect all child processes."
       echo "XXX"
-      kill $BUILD_QT_PID
+      killgroup $BUILD_QT_PID
       sleep 1
       if ! ps -p $BUILD_QT_PID > /dev/null; then
-        BUILD_QT_MUST_KILL="Done"
         break;
       fi
     else
@@ -1441,17 +1454,6 @@ function build_Qt()
 
     BUILD_QT_LOG="$WM_THIRD_PARTY_DIR/build_Qt.log"
 
-    #for Ubuntu 10.04, a simbolic link is required
-    isleftlarger_or_equal $version 10.04
-    if [ x"$?" == x"1" ]; then
-      LIBXEXTPATH=`locate libXext.so | grep "^/usr/lib" | head -n 1`
-      if [ ! -e "${WM_THIRD_PARTY_DIR}/qt-x11-opensource-src-${QT_VERSION}/lib" ]; then
-        mkdir -p "${WM_THIRD_PARTY_DIR}/qt-x11-opensource-src-${QT_VERSION}/lib"
-      fi
-      ln -s "$LIBXEXTPATH" "${WM_THIRD_PARTY_DIR}/qt-x11-opensource-src-${QT_VERSION}/lib/libXext.so"
-      unset LIBXEXTPATH
-    fi
-
     #set up traps...
     trap build_Qt_ctrl_c_triggered SIGINT SIGQUIT SIGTERM
 
@@ -1467,9 +1469,8 @@ function build_Qt()
     
     #wait for kill code to change
     if ps -p $BUILD_QT_PID > /dev/null || [ "x$BUILD_QT_MUST_KILL" != "x" ]; then
-      while [ "x$BUILD_QT_MUST_KILL" != "xDone" ]; do
-        sleep 1
-      done
+      echo "NOTE: The kill code will take a few seconds to affect all child processes."
+      sleep 1.5
     fi
 
     #clear traps
@@ -1504,11 +1505,11 @@ function build_Paraview_progress_dialog()
       echo $percent
       echo "XXX"
       echo -e "\n\nKill code issued... please wait..."
+      echo -e "NOTE: The kill code will take a few seconds \nto affect all child processes."
       echo "XXX"
-      kill $BUILD_PARAVIEW_PID
+      killgroup $BUILD_PARAVIEW_PID
       sleep 1
       if ! ps -p $BUILD_PARAVIEW_PID > /dev/null; then
-        BUILD_PARAVIEW_MUST_KILL="Done"
         break;
       fi
     else
@@ -1623,9 +1624,8 @@ function build_Paraview()
 
       #wait for kill code to change
       if ps -p $BUILD_PARAVIEW_PID > /dev/null || [ "x$BUILD_PARAVIEW_MUST_KILL" != "x" ]; then
-        while [ "x$BUILD_PARAVIEW_MUST_KILL" != "xDone" ]; do
-          sleep 1
-        done
+        echo "NOTE: The kill code will take a few seconds to affect all child processes."
+        sleep 1.5
       fi
 
       #clear traps
@@ -2084,9 +2084,8 @@ if [ x"$FOAMINSTALLFAILED" == "x" -o x"$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; 
   # NOTE: run bash instead of exit, so the OpenFOAM environment stays operational on 
   #the calling terminal.
   cd_openfoam
-  exec bash
+  bash
 else
   #this shouldn't be necessary, but just in case:
   exit
 fi
-
