@@ -138,6 +138,17 @@ function killgroup()
 {
   kill -SIGABRT $1
 }
+
+function cancel_installer()
+{
+    dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+--title "Cancel the Installer" \
+--yesno 'Are you sure that you want to cancel the installer ??' 5 60 ;
+    if [ x"$?" == x"0" ]; then
+        clear
+        exit
+    fi
+}
 #-- END UTILITY FUNCTIONS --------------------------------------------------
 
 #-- PATCHING FUNCTIONS -----------------------------------------------------
@@ -1782,26 +1793,48 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 -----------------------------------------------------------------------" 12 80
 
 #Choose path to install OF, default is already set
+while : ; do
 PATHOF=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
 --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM ) 
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 
 #Logging option Dialog
+while : ; do
 LOG_OUTPUTS=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
 'Yes'   '' \
 'No' '' )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 
 #Installation mode dialog
+while : ; do
 INSTALLMODE=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
 --radiolist 'Choose the Install Mode: < default: fresh >' 10 50 3 \
 'fresh' 'Make new Install' on  \
 'update'   'Update currenty install'           off \
 'server'    'Paraview with: -GUI +MPI'    off )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 
 #Settings choosing Dialog
+while : ; do
 SETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
 --checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
@@ -1810,6 +1843,12 @@ SETTINGSOPTS=$(dialog --stdout --separate-output \
 3 "Use startFoam alias" on \
 4 "Use OpenFOAM gcc compiler" on \
 5 "Build ccm26ToFoam" off )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 
 #Take care of unpack settings from SETTINGSOPTS
 DOUPGRADE=No ; BUILD_DOCUMENTATION=
@@ -1829,6 +1868,7 @@ BUILD_PARAVIEW_WITH_MPI=No
 BUILD_PARAVIEW_WITH_PYTHON=No
 #ParaView configurations for a fresh install
 if [ "$INSTALLMODE" == "fresh" ]; then
+while : ; do
     PVSETTINGSOPTS=$(dialog --stdout --separate-output \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
 --checklist "Choose ParaView settings: < Space to select ! >" 15 52 5 \
@@ -1837,6 +1877,12 @@ if [ "$INSTALLMODE" == "fresh" ]; then
 3 "Build ParaView with GUI ?" on \
 4 "Build ParaView with MPI support ?" off \
 5 "Build ParaView with Python support ?" off )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 fi
 #Take care of unpack settings from PVSETTINGSOPTS
 for setting in $PVSETTINGSOPTS ; do
@@ -1884,18 +1930,31 @@ fi
 #GCC compiling settings
 if [ "$USE_OF_GCC" == "Yes" ]; then
   if [ "$arch" == "x86_64" ]; then
+while : ; do
     GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
     --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
     --checklist "Choose Install settings: < Space to select ! >" 10 60 2 \
     1 "Build GCC? (otherwise use pre-compiled version)" off \
     2 "Build GCC in 64bit mode only?" off )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-  
+while : ; do  
     GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
     --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
     --checklist "Choose Install settings: < Space to select ! >" 10 60 1 \
     1 "Build GCC? (otherwise use pre-compiled version)" off )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
   fi
 
   BUILD_GCC=No
@@ -1914,6 +1973,7 @@ if [ "$LOG_OUTPUTS" == "Yes" ]; then
 fi
 
 #Mirror selection dialog
+while : ; do
 mirror=$(dialog --stdout \
 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
 --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
@@ -1927,6 +1987,12 @@ jaist 'Japan' \
 puzzle 'Switzerland' \
 kent 'UK' \
 internap 'US' )
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 
 #Detect and take care of fastest mirror
 if [ "$mirror" == "findClosest" ]; then
@@ -1976,7 +2042,8 @@ fi
 clear
 
 #Show to user the detected settings, last chance to cancel the installer
-dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+while : ; do
+(dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
 --title "Final settings - <ESC> to abort the Installer" \
 --msgbox "-------------------------------------------------------------------------\n
 | =========   Detected that you are running: Ubuntu $version - $arch\n
@@ -1988,9 +2055,13 @@ dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/open
 | *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
 |             Use OpenFOAM gcc ? $USE_OF_GCC\n
 -------------------------------------------------------------------------\n
-!For more info see documentation on code.google.com/p/openfoam-ubuntu" 14 80
-clear
-
+!For more info see documentation on code.google.com/p/openfoam-ubuntu" 14 80)
+if [ x"$?" == x"0" ]; then
+break;
+else
+cancel_installer
+fi
+done
 #END OF INTERACTIVE SECTION  ----------------------------------
 
 #Run usual install steps if in "fresh" or "server" install mode
