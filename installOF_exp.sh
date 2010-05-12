@@ -10,7 +10,9 @@
 #
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
-#TODO 1 - Cancel button in dialogs don't do anything... either use "--no-cancel" or do something with it
+#TODO 1 - Create adavanced settings, than agregated all nontrivial settings in there
+#TODO 2 - enable SYSTEMOPENMPI in bashrc
+#TODO 3 - use wmakeScheduler for multiple building hosts"
 
 #Code ---------------------------------------------------------
 
