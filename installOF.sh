@@ -25,7 +25,7 @@ if [ $(/usr/bin/id -u) -eq 0 ]; then
     exit
 fi
 
-#Detect architeture and ubuntu version
+#Detect architecture and ubuntu version
 set -e
 arch=`uname -m`
 version=`cat /etc/lsb-release | grep DISTRIB_RELEASE= | sed s/DISTRIB_RELEASE=/$1/g`
@@ -128,7 +128,7 @@ function monitor_sleep()
   while ps -p $1 > /dev/null; do
     sleep 1
     count_secs=`expr $count_secs + 1`
-    if [ "$count_secs" == "$2" ]; then
+    if [ "x$count_secs" == "x$2" ]; then
       break;
     fi
   done
@@ -523,7 +523,7 @@ function define_packages_to_download()
     THIRDPARTY_BIN="ThirdParty-1.6.linux64Gcc.gtgz"
     
     isleftlarger_or_equal 8.04 $version
-    if [ x"$?" == x"1" ]; then
+    if [ "x$?" == "x1" ]; then
       THIRDPARTY_BIN_CMAKE="ThirdParty-1.6.linuxGcc.gtgz"
     fi
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
@@ -542,7 +542,7 @@ function define_packages_to_download()
   #patch file for tweaking timing option into wmake
   WMAKEPATCHFILE="patchWmake"
   
-  if [ "$BUILD_QT" == "Yes" ]; then
+  if [ "x$BUILD_QT" == "xYes" ]; then
     QT_VERSION=4.3.5
     QT_BASEURL="ftp://ftp.trolltech.com/qt/source/"
     QT_PACKAGEFILE="qt-x11-opensource-src-$QT_VERSION.tar.bz2"
@@ -575,17 +575,20 @@ function install_ubuntu_packages()
   fi
 
   #for documentation, these are necessary
-  if [ "$BUILD_DOCUMENTATION" == "doc" ]; then
+  if [ "x$BUILD_DOCUMENTATION" == "xdoc" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL doxygen graphviz"
   fi
 
   #for building gcc, these are necessary
   if [ "x$BUILD_GCC" == "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
+    if [ "x$BUILD_GCC_STRICT_64BIT" != "xYes" ]; then
+      PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL ia32libs"
+    fi
   fi
 
   #install qt4-dev and qt4-dev-tools only if the custom build isn't used
-  if [ "$BUILD_QT" != "Yes" ]; then
+  if [ "x$BUILD_QT" != "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libqt4-dev qt4-dev-tools"
   fi
 
@@ -593,14 +596,14 @@ function install_ubuntu_packages()
   prune_packages_to_install
   
   #only show commands for installation if any packages are missing!
-  if [ x"$PACKAGES_TO_INSTALL" != "x" ]; then
+  if [ "x$PACKAGES_TO_INSTALL" != "x" ]; then
 
     #if permission granted
-    if [ x"$SHOW_SUDO_COMMANDS_ONLY" != "xYES" ]; then
+    if [ "x$SHOW_SUDO_COMMANDS_ONLY" != "xYES" ]; then
 
       echo 'The command "sudo apt-get update -y -q=1" is now going to be executed. Please provide sudo password if it asks you.'
       sudo apt-get update -y -q=1
-      if [ "$DOUPGRADE" == "Yes" ]; then
+      if [ "x$DOUPGRADE" == "xYes" ]; then
         echo 'The command "sudo apt-get upgrade -y" is now going to be executed.'
         sudo apt-get upgrade -y
       fi
@@ -614,7 +617,7 @@ function install_ubuntu_packages()
 
       echo 'Please run the following commands in another terminal or ask your system''s administrator to run them:'
       echo '    sudo apt-get update -y -q=1'
-      if [ "$DOUPGRADE" == "Yes" ]; then
+      if [ "x$DOUPGRADE" == "xYes" ]; then
         echo '    sudo apt-get upgrade -y'
       fi
       echo "    sudo apt-get install -y -q=1 $PACKAGES_TO_INSTALL"
@@ -630,7 +633,7 @@ function install_ubuntu_packages()
   
   #now remove the ones that are already installed again, to confirm that all have been installed!
   prune_packages_to_install
-  if [ x"$PACKAGES_TO_INSTALL" != "x" ]; then
+  if [ "x$PACKAGES_TO_INSTALL" != "x" ]; then
     echo -e "\n\nWARNING: The following packages aren't installed:"
     echo "  $PACKAGES_TO_INSTALL"
     echo -e "\nDo you want to try and continue the OpenFOAM installation? (yes or no): "
@@ -701,6 +704,7 @@ function do_wget()
 #second argument is the file where the check list is
 function do_md5sum()
 {
+  set +e
   echo "Checking md5 checksum of file $1 ..."
   if [ x`grep $2 -e "$1" | md5sum -c | grep "$1: OK" | wc -l` == "x1" ]; then
     echo "File is OK."
@@ -709,6 +713,7 @@ function do_md5sum()
     echo "File is NOT OK."
     return 0
   fi
+  set -e
 }
 
 #this function will do wget and md5sum, and provide the possibility of 
@@ -751,11 +756,11 @@ function download_files()
 
   #download Third Party binaries, but only if requested and necessary!
   if [ "x$THIRDPARTY_BIN" != "x" ]; then
-      do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
+    do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
   fi
   
   if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then
-      do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN_CMAKE" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
+    do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN_CMAKE" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
   fi
 
   #download patch files that didn't fit in this script
@@ -763,7 +768,7 @@ function download_files()
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
 
-  if [ "$BUILD_QT" == "Yes" ]; then
+  if [ "x$BUILD_QT" == "xYes" ]; then
     do_wget "$QT_BASEURL" "$QT_PACKAGEFILE"
   fi
 
@@ -797,7 +802,7 @@ function unpack_downloaded_files()
     pv $THIRDPARTY_BIN_CMAKE | tar -xz ThirdParty-1.6/cmake-2.6.4
   fi
   
-  if [ "$BUILD_QT" == "Yes" ]; then
+  if [ "x$BUILD_QT" == "xYes" ]; then
     cd_openfoam
     cd ThirdParty-1.6
     echo "Untaring $QT_PACKAGEFILE"
@@ -846,10 +851,33 @@ function OpenFOAM_git_clone()
   echo "------------------------------------------------------"
   #redo the link if necessary
   if [ -L "$PATHOF/ThirdParty-1.6.x" ]; then
-    unlink $PATHOF/ThirdParty-1.6.x
+    unlink "$PATHOF/ThirdParty-1.6.x"
   fi
-  ln -s $PATHOF/ThirdParty-1.6 $PATHOF/ThirdParty-1.6.x
+  ln -s "$PATHOF/ThirdParty-1.6" "$PATHOF/ThirdParty-1.6.x"
   git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
+}
+
+
+function link_gcc433_libraries_to_system()
+{
+  #Define which folder to fix libraries
+  if [ "$version" != "8.04" ]; then
+    if [ "$arch" == "x86_64" ]; then
+      LIBRARY_PATH_TO_FIX=${PATHOF}/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64
+    elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
+      LIBRARY_PATH_TO_FIX=${PATHOF}/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib
+    fi
+  fi
+
+  echo "-----------------------------------------------------"
+  echo "Fixing library links"
+  cd $LIBRARY_PATH_TO_FIX
+  mv libstdc++.so.6 libstdc++.so.6.orig
+  ln -s `locate libstdc++.so.6.0 | grep "^/usr/lib" | head -n 1` libstdc++.so.6
+  mv libgcc_s.so.1 libgcc_s.so.1.orig
+  ln -s `locate libgcc_s.so. | grep "^/lib" | head -n 1` libgcc_s.so.1
+  echo "Fix up done"
+  echo "------------------------------------------------------"
 }
 
 #apply patches and fixes
@@ -861,29 +889,12 @@ function apply_patches_fixes()
   
   #fix links to proper libraries for gcc, as long as the OpenFOAM's precompiled version is used
   isleftlarger_or_equal $version 9.10
-  if [ x"$?" == x"1" -a "$USE_OF_GCC" == "Yes" ]; then
-    #Define which folder to fix libraries
-    if [ "$version" != "8.04" ]; then
-      if [ "$arch" == "x86_64" ]; then
-        LIBRARY_PATH_TO_FIX=${PATHOF}/ThirdParty-1.6/gcc-4.3.3/platforms/linux64/lib64
-      elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-        LIBRARY_PATH_TO_FIX=${PATHOF}/ThirdParty-1.6/gcc-4.3.3/platforms/linux/lib
-      fi
-    fi
-
-    echo "-----------------------------------------------------"
-    echo "Fixing library links"
-    cd $LIBRARY_PATH_TO_FIX
-    mv libstdc++.so.6 libstdc++.so.6.orig
-    ln -s `locate libstdc++.so.6.0 | grep "^/usr/lib" | head -n 1` libstdc++.so.6
-    mv libgcc_s.so.1 libgcc_s.so.1.orig
-    ln -s `locate libgcc_s.so. | grep "^/lib" | head -n 1` libgcc_s.so.1
-    echo "Fix up done"
-    echo "------------------------------------------------------"
+  if [ x"$?" == x"1" -a "x$USE_OF_GCC" == "xYes" ]; then
+    link_gcc433_libraries_to_system
   fi
   
   #fix Paraview's help file reference, for when Paraview isn't built
-  if [ "$BUILD_PARAVIEW" != "Yes" ]; then
+  if [ "x$BUILD_PARAVIEW" != "xYes" ]; then
     cd_openfoam
     if [ x`echo $arch | grep -e "i.86"` != "x" ]; then
       cd ThirdParty-1.6/paraview-3.6.1/platforms/linuxGcc/bin
@@ -910,7 +921,7 @@ function apply_patches_fixes()
     patchBashrcTo32
   fi
   #Fix for using the system's compiler
-  if [ "$USE_OF_GCC" == "No" ]; then
+  if [ "x$USE_OF_GCC" == "xNo" ]; then
     patchSettingsToSystemCompiler
   fi #for using the system's compiler
   
@@ -950,7 +961,7 @@ function add_openfoam_to_bashrc()
   cat ~/.bashrc | grep -v 'OpenFOAM/OpenFOAM-1.6.x/etc/bashrc' > ~/.bashrc.new
   cp ~/.bashrc ~/.bashrc.old
   mv ~/.bashrc.new ~/.bashrc
-  if [ "$USE_ALIAS_FOR_BASHRC" == "Yes" ]; then
+  if [ "x$USE_ALIAS_FOR_BASHRC" == "xYes" ]; then
     echo -e "alias startFoam=\". $PATHOF/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
   else
     echo ". $PATHOF/OpenFOAM-1.6.x/etc/bashrc" >> ~/.bashrc
@@ -977,7 +988,7 @@ function build_gcc_progress_dialog()
     else
       BUILD_GCC_MAKECOUNT=`grep 'make\[.\]' build_gcc.log | wc -l`
       nowpercent=`expr $BUILD_GCC_MAKECOUNT \* 100 / $BUILD_GCC_LAST_BUILD_COUNT`
-      if [ "$nowpercent" != "$percent" ]; then
+      if [ "x$nowpercent" != "x$percent" ]; then
         percent=$nowpercent
         BUILD_GCC_UPDATE_TIME=`date`
       fi
@@ -1020,7 +1031,7 @@ function build_openfoam_gcc()
   if [ "x$BUILD_GCC" == "xYes" ]; then
     
     #set up environment, just in case we forget about it!
-    if [ x"$WM_PROJECT_DIR" == "x" ]; then
+    if [ "x$WM_PROJECT_DIR" == "x" ]; then
       setOpenFOAMEnv
     fi
 
@@ -1067,8 +1078,15 @@ function build_openfoam_gcc()
       echo -e "gcc started to build at:\n\t$BUILD_GCC_START_TIME\n"
       echo -e "Building gcc finished successfully at:\n\t`date`"
       echo "gcc is ready to be used."
+
+      #TODO: this won't be necessary if we build cmake too, since then there won't be 
+      #any more dependencies to the system's libraries!
+      if [ "$arch" == "x86_64" ]; then
+        link_gcc433_libraries_to_system
+      fi
     else
-      echo "Build process didn't finished with success. Please check the log file for more information."
+      echo "Build process didn't finished with success. Please check the log file for more information:"
+      echo -e "\t$BUILD_GCC_LOG"
       echo "You can post it at this forum thread:"
       echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
       echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
@@ -1106,7 +1124,7 @@ function build_awopenfoam_progress_dialog()
         nowpercent=`expr $BUILD_AWOPENFOAM_NOWCOUNT \* 100 / $BUILD_AWOPENFOAMDOC_ESTIMCOUNT`
       fi
       
-      if [ "$nowpercent" != "$percent" ]; then
+      if [ "x$nowpercent" != "x$percent" ]; then
         percent=$nowpercent
         BUILD_AWOPENFOAM_UPDATE_TIME=`date`
       fi
@@ -1190,7 +1208,7 @@ function build_awopenfoam_ctrl_c_triggered()
 function allwmake_openfoam()
 {
   #set up environment, just in case we forget about it!
-  if [ x"$WM_PROJECT_DIR" == "x" ]; then
+  if [ "x$WM_PROJECT_DIR" == "x" ]; then
     setOpenFOAMEnv
   fi
 
@@ -1248,16 +1266,16 @@ function allwmake_openfoam()
 
 function continue_after_failed_openfoam()
 {
-  if [ x"$FOAMINSTALLFAILED" != "x" ]; then
+  if [ "x$FOAMINSTALLFAILED" != "x" ]; then
     FOAMINSTALLFAILED_BUTCONT="No"
     echo -e "\n------------------------------------------------------\n"
     echo "Although the previous step seems to have failed, do you wish to continue with the remaining steps?"
     
-    if [ "$BUILD_CCM26TOFOAM" == "Yes" -o "$BUILD_PARAVIEW" == "Yes" -o "$BUILD_QT" == "Yes" ]; then 
+    if [ "x$BUILD_CCM26TOFOAM" == "xYes" -o "x$BUILD_PARAVIEW" == "xYes" -o "x$BUILD_QT" == "xYes" ]; then 
       echo "Missing steps are:"
-      if [ "$BUILD_QT" == "Yes" ]; then echo "- Building Qt"; fi
-      if [ "$BUILD_PARAVIEW" == "Yes" ]; then echo "- Building Paraview"; fi
-      if [ "$BUILD_CCM26TOFOAM" == "Yes" ]; then echo "- Building ccm26ToFoam"; fi
+      if [ "x$BUILD_QT" == "xYes" ]; then echo "- Building Qt"; fi
+      if [ "x$BUILD_PARAVIEW" == "xYes" ]; then echo "- Building Paraview"; fi
+      if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then echo "- Building ccm26ToFoam"; fi
     fi
 
     echo "Continue? (yes or no): "
@@ -1274,7 +1292,7 @@ function continue_after_failed_openfoam()
 function check_installation()
 {
   #set up environment, just in case we forget about it!
-  if [ x"$WM_PROJECT_DIR" == "x" ]; then
+  if [ "x$WM_PROJECT_DIR" == "x" ]; then
     setOpenFOAMEnv
   fi
 
@@ -1322,7 +1340,7 @@ function fix_tutorials()
   is_sh_bash
   if [ "x$?" == "x0" ]; then
     #set up environment, just in case we forget about it!
-    if [ x"$FOAM_TUTORIALS" == "x" ]; then
+    if [ "x$FOAM_TUTORIALS" == "x" ]; then
       setOpenFOAMEnv
     fi
 
@@ -1348,24 +1366,24 @@ function fix_tutorials()
 function final_messages_for_clean_install()
 {
   echo "------------------------------------------------------"
-  if [ x"$FOAMINSTALLFAILED" == "x" ]; then
+  if [ "x$FOAMINSTALLFAILED" == "x" ]; then
 
     #If using bash alias, inform to use it to run!
-    if [ "$USE_ALIAS_FOR_BASHRC" == "Yes" ]; then
-      echo "Installation complete - You have choose to use bash alias"
-      echo "Before running OpenFOAM on a new terminal/console, type: startFoam"
-      echo "The OpenFOAM environment is ready to be used."
+    if [ "x$USE_ALIAS_FOR_BASHRC" == "xYes" ]; then
+      echo "Installation complete - You have chosen to use bash alias"
+      echo "To start using OpenFOAM, you'll have to start a new terminal first;"
+      echo -e "then, type:\n\tstartFoam\nto activate the OpenFOAM environment."
       echo "------------------------------------------------------"
     else
       echo "Installation complete"
-      echo "The OpenFOAM environment is ready to be used."
+      echo "To start using OpenFOAM, you'll have to start a new terminal first."
       echo "------------------------------------------------------"
     fi
   
   else
 
     echo "Installation failed. Please don't forget to check the provided forum link for solutions on the provided link, and/or report the error."
-    if [ "$USE_ALIAS_FOR_BASHRC" == "Yes" ]; then
+    if [ "x$USE_ALIAS_FOR_BASHRC" == "xYes" ]; then
       echo "Nonetheless, next time you launch a new terminal/console, you can set up the OpenFOAM environment by typing: startFoam"
     else
       echo "Nonetheless, next time you launch a new terminal/console, the OpenFOAM environment will be ready to be used."
@@ -1378,7 +1396,7 @@ function final_messages_for_clean_install()
 function OpenFOAM_git_pull()
 {
   #set up environment, just in case we forget about it!
-  if [ x"$WM_PROJECT_DIR" == "x" ]; then
+  if [ "x$WM_PROJECT_DIR" == "x" ]; then
     setOpenFOAMEnv
   fi
 
@@ -1410,7 +1428,7 @@ function build_Qt_progress_dialog()
     else
       BUILD_QT_MAKECOUNT=`grep 'make\[.\]' build_Qt.log | wc -l`
       nowpercent=`expr $BUILD_QT_MAKECOUNT \* 100 / $BUILD_QT_LAST_BUILD_COUNT`
-      if [ "$nowpercent" != "$percent" ]; then
+      if [ "x$nowpercent" != "x$percent" ]; then
         percent=$nowpercent
         BUILD_QT_UPDATE_TIME=`date`
       fi
@@ -1449,9 +1467,9 @@ function build_Qt_ctrl_c_triggered()
 
 function build_Qt()
 {
-  if [ "$BUILD_QT" == "Yes" ]; then
+  if [ "x$BUILD_QT" == "xYes" ]; then
     #set up environment, just in case we forget about it!
-    if [ x"$WM_PROJECT_DIR" == "x" ]; then
+    if [ "x$WM_PROJECT_DIR" == "x" ]; then
       setOpenFOAMEnv
     fi
 
@@ -1495,7 +1513,8 @@ function build_Qt()
       echo -e "Building Qt finished successfully at:\n\t`date`"
       echo "Qt is ready to use for building Paraview."
     else
-      echo "Build process didn't finished with success. Please check the log file for more information."
+      echo "Build process didn't finished with success. Please check the log file for more information:"
+      echo -e "\t$BUILD_QT_LOG"
       echo "You can post it at this forum thread:"
       echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
       echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
@@ -1526,11 +1545,9 @@ function build_Paraview_progress_dialog()
     else
       #get progress value
       BUILD_PARAVIEW_PROGRESS=`cat "$PARAVIEW_BUILD_LOG" | grep "^\[" | tail -n 1 | sed 's/^\[\([ 0-9]*\).*/\1/' | sed 's/\ *//'`
-      if [ "x$BUILD_PARAVIEW_PROGRESS" != "x" ]; then
-        if [ "$BUILD_PARAVIEW_PROGRESS" != "$percent" ]; then
-          percent=$BUILD_PARAVIEW_PROGRESS
-          BUILD_PARAVIEW_UPDATE_TIME=`date`
-        fi
+      if [ "x$BUILD_PARAVIEW_PROGRESS" != "x" -a "x$BUILD_PARAVIEW_PROGRESS" != "x$percent" ]; then
+        percent=$BUILD_PARAVIEW_PROGRESS
+        BUILD_PARAVIEW_UPDATE_TIME=`date`
       fi
       
       #get current build stage
@@ -1579,9 +1596,9 @@ function build_Paraview_ctrl_c_triggered()
 
 function build_Paraview()
 {
-  if [ "$BUILD_PARAVIEW" == "Yes" ]; then
+  if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
     
-    if [ "$BUILD_QT" == "Yes" -a "x$BUILDING_QT_FAILED" == "xYes" ]; then
+    if [ "x$BUILD_QT" == "xYes" -a "x$BUILDING_QT_FAILED" == "xYes" ]; then
 
       echo "------------------------------------------------------"
       echo "The requested Qt is unavailable, thus rendering impossible to build Paraview with it."
@@ -1590,7 +1607,7 @@ function build_Paraview()
     else
 
       #set up environment, just in case we forget about it!
-      if [ x"$WM_PROJECT_DIR" == "x" ]; then
+      if [ "x$WM_PROJECT_DIR" == "x" ]; then
         setOpenFOAMEnv
       fi
 
@@ -1602,19 +1619,19 @@ function build_Paraview()
       fi 
 
       PARAVIEW_BUILD_OPTIONS=""
-      if [ "$BUILD_QT" == "Yes" ]; then
+      if [ "x$BUILD_QT" == "xYes" ]; then
         PARAVIEW_BUILD_OPTIONS="$PARAVIEW_BUILD_OPTIONS -qmake \"$QT_PLATFORM_PATH/bin/qmake\""
       fi
 
-      if [ "$BUILD_PARAVIEW_WITH_GUI" == "No" ]; then
+      if [ "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" ]; then
         PARAVIEW_BUILD_OPTIONS="$PARAVIEW_BUILD_OPTIONS -noqt"
       fi
 
-      if [ "$BUILD_PARAVIEW_WITH_MPI" == "Yes" ]; then
+      if [ "x$BUILD_PARAVIEW_WITH_MPI" == "xYes" ]; then
         PARAVIEW_BUILD_OPTIONS="$PARAVIEW_BUILD_OPTIONS -mpi"
       fi
 
-      if [ "$BUILD_PARAVIEW_WITH_PYTHON" == "Yes" ]; then
+      if [ "x$BUILD_PARAVIEW_WITH_PYTHON" == "xYes" ]; then
         PARAVIEW_BUILD_OPTIONS="$PARAVIEW_BUILD_OPTIONS -python"
       fi
 
@@ -1650,7 +1667,8 @@ function build_Paraview()
         echo -e "Building Paraview finished successfully at:\n\t`date`"
         echo "Paraview is ready to use."
       else
-        echo "Build process didn't finished with success. Please check the log file for more information."
+        echo "Build process didn't finished with success. Please check the log file for more information:"
+        echo -e "\t$PARAVIEW_BUILD_LOG"
         echo "You can post it at this forum thread:"
         echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
         echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
@@ -1665,14 +1683,14 @@ function build_Paraview()
 
 function build_PV3FoamReader()
 {
-  if [ "$BUILD_PARAVIEW" == "Yes" ]; then
+  if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
     
     #set up environment, just in case we forget about it!
-    if [ x"$WM_PROJECT_DIR" == "x" ]; then
+    if [ "x$WM_PROJECT_DIR" == "x" ]; then
       setOpenFOAMEnv
     fi
 
-    if [ "$BUILD_QT" == "Yes" -a "x$BUILDING_QT_FAILED" == "xYes" ]; then
+    if [ "x$BUILD_QT" == "xYes" -a "x$BUILDING_QT_FAILED" == "xYes" ]; then
 
       echo "------------------------------------------------------"
       echo "No Qt, no Paraview, thus no PV3FoamReader."
@@ -1710,7 +1728,8 @@ function build_PV3FoamReader()
       if [ -e "$FOAM_LIBBIN/libvtkPV3Foam.so" -a -e "$FOAM_LIBBIN/libPV3FoamReader.so" -a -e "$FOAM_LIBBIN/libPV3FoamReader_SM.so" ]; then
         echo "Build process finished successfully: paraFoam is ready to use."
       else
-        echo "Build process didn't finished with success. Please check the log file for more information."
+        echo "Build process didn't finished with success. Please check the log file for more information:"
+        echo -e "\t$PV3FOAMREADER_BUILD_LOG"
         echo "You can post it at this forum thread:"
         echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
         echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
@@ -1725,9 +1744,9 @@ function build_PV3FoamReader()
 function build_ccm26ToFoam()
 {
   
-  if [ "$BUILD_CCM26TOFOAM" == "Yes" ]; then
+  if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
     #set up environment, just in case we forget about it!
-    if [ x"$WM_PROJECT_DIR" == "x" ]; then
+    if [ "x$WM_PROJECT_DIR" == "x" ]; then
       setOpenFOAMEnv
     fi
 
@@ -1753,7 +1772,8 @@ function build_ccm26ToFoam()
     if [ -e "$FOAM_APPBIN/ccm26ToFoam" ]; then
       echo "Build process finished successfully: ccm26ToFoam is ready to use."
     else
-      echo "Build process didn't finished with success. Please check the log file for more information."
+      echo "Build process didn't finished with success. Please check the log file for more information:"
+      echo -e "\t$BUILD_CCM26TOFOAM_LOG"
       echo "You can post it at this forum thread:"
       echo "  http://www.cfd-online.com/Forums/openfoam-installation/73805-openfoam-1-6-x-installer-ubuntu.html"
       echo -e '\nYou can also verify that thread for other people who might have had the same problems.'
@@ -1794,60 +1814,64 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 
 #Choose path to install OF, default is already set
 while : ; do
-PATHOF=$(dialog --stdout \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
---inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM ) 
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
+  PATHOF=$(dialog --stdout \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+  --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM ) 
+
+  if [ x"$?" == x"0" ]; then
+    break;
+  else
+    cancel_installer
+  fi
 done
 
 #Logging option Dialog
 while : ; do
-LOG_OUTPUTS=$(dialog --stdout \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
---menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
-'Yes'   '' \
-'No' '' )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
+  LOG_OUTPUTS=$(dialog --stdout \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+  --menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
+  'Yes'   '' \
+  'No' '' )
+
+  if [ x"$?" == x"0" ]; then
+    break;
+  else
+    cancel_installer
+  fi
 done
 
 #Installation mode dialog
 while : ; do
-INSTALLMODE=$(dialog --stdout \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
---radiolist 'Choose the Install Mode: < default: fresh >' 10 50 3 \
-'fresh' 'Make new Install' on  \
-'update'   'Update currenty install'           off \
-'server'    'Paraview with: -GUI +MPI'    off )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
+  INSTALLMODE=$(dialog --stdout \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
+  --radiolist 'Choose the Install Mode: < default: fresh >' 10 50 3 \
+  'fresh' 'Make new Install' on  \
+  'update'   'Update currenty install'           off \
+  'server'    'Paraview with: -GUI +MPI'    off )
+
+  if [ x"$?" == x"0" ]; then
+    break;
+  else
+    cancel_installer
+  fi
 done
 
 #Settings choosing Dialog
 while : ; do
-SETTINGSOPTS=$(dialog --stdout --separate-output \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
---checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
-1 "Do apt-get upgrade" off \
-2 "Build OpenFOAM docs" off \
-3 "Use startFoam alias" on \
-4 "Use OpenFOAM gcc compiler" on \
-5 "Build ccm26ToFoam" off )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
+  SETTINGSOPTS=$(dialog --stdout --separate-output \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+  --checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
+  1 "Do apt-get upgrade" off \
+  2 "Build OpenFOAM docs" off \
+  3 "Use startFoam alias" on \
+  4 "Use OpenFOAM gcc compiler" on \
+  5 "Build ccm26ToFoam" off )
+
+  if [ x"$?" == x"0" ]; then
+    break;
+  else
+    cancel_installer
+  fi
 done
 
 #Take care of unpack settings from SETTINGSOPTS
@@ -1868,21 +1892,22 @@ BUILD_PARAVIEW_WITH_MPI=No
 BUILD_PARAVIEW_WITH_PYTHON=No
 #ParaView configurations for a fresh install
 if [ "$INSTALLMODE" == "fresh" ]; then
-while : ; do
+  while : ; do
     PVSETTINGSOPTS=$(dialog --stdout --separate-output \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
---checklist "Choose ParaView settings: < Space to select ! >" 15 52 5 \
-1 "Do custom build of QT 4.3.5 ?" off \
-2 "Do custom build of ParaView ?" off \
-3 "Build ParaView with GUI ?" on \
-4 "Build ParaView with MPI support ?" off \
-5 "Build ParaView with Python support ?" off )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
-done
+    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+    --checklist "Choose ParaView settings: < Space to select ! >" 15 52 5 \
+    1 "Do custom build of QT 4.3.5 ?" off \
+    2 "Do custom build of ParaView ?" off \
+    3 "Build ParaView with GUI ?" on \
+    4 "Build ParaView with MPI support ?" off \
+    5 "Build ParaView with Python support ?" off )
+
+    if [ x"$?" == x"0" ]; then
+      break;
+    else
+      cancel_installer
+    fi
+  done
 fi
 #Take care of unpack settings from PVSETTINGSOPTS
 for setting in $PVSETTINGSOPTS ; do
@@ -1893,22 +1918,22 @@ for setting in $PVSETTINGSOPTS ; do
   if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
 done
 
-if [ "$version" == "10.04" -a "$BUILD_PARAVIEW" != "Yes" ]; then
+if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
     BUILD_PARAVIEW=Yes
     dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
     --title "Non-optional setting detected!" \
-    --infobox "You are running Ubuntu $version. \n To ParaView properly work this script will do a custom build of ParaView and PV3FoamReader" 5 70
+    --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of ParaView and PV3FoamReader" 5 70
 fi
 if [ "$version" == "8.04" ]; then
-  if [ "$BUILD_PARAVIEW" != "Yes" -o "$BUILD_QT" != "Yes" ]; then
+  if [ "x$BUILD_PARAVIEW" != "Yes" -o "x$BUILD_QT" != "xYes" ]; then
     BUILD_QT=Yes
     BUILD_PARAVIEW=Yes
     dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
     --title "Non-optional setting detected!" \
-    --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom\nbuild of Qt and also build Paraview." 5 70
+    --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom build of Qt and also build Paraview." 5 70
   fi
 fi
-if [ "$INSTALLMODE" == "server" ]; then
+if [ "x$INSTALLMODE" == "xserver" ]; then
     BUILD_PARAVIEW=Yes
     BUILD_PARAVIEW_WITH_GUI=No
     BUILD_PARAVIEW_WITH_MPI=Yes
@@ -1918,43 +1943,46 @@ if [ "$INSTALLMODE" == "server" ]; then
 fi
 
 #verifying Paraview Build options, just in case
-if [ "$BUILD_PARAVIEW" == "No" ]; then
-  if [ "$BUILD_PARAVIEW_WITH_MPI" == "Yes" -o "$BUILD_PARAVIEW_WITH_PYTHON" == "Yes" -o "$BUILD_PARAVIEW_WITH_GUI" == "No" -o "$BUILD_QT" == "Yes" ]; then
+if [ "x$BUILD_PARAVIEW" == "xNo" ]; then
+  if [ "x$BUILD_PARAVIEW_WITH_MPI" == "xYes" -o "x$BUILD_PARAVIEW_WITH_PYTHON" == "xYes" -o \
+       "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" -o "x$BUILD_QT" == "xYes" ]; then
       BUILD_PARAVIEW=Yes
       dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
       --title "Non-optional setting detected!" \
-      --infobox "\nParaView will need to be built, since the pre-built version isn't enough\nfor the chosen options" 5 70
+      --infobox "\nParaView will need to be built, since the pre-built version isn't enough for the chosen options" 10 70
   fi
 fi
 
 #GCC compiling settings
-if [ "$USE_OF_GCC" == "Yes" ]; then
+if [ "x$USE_OF_GCC" == "xYes" ]; then
   if [ "$arch" == "x86_64" ]; then
-while : ; do
-    GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
-    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-    --checklist "Choose Install settings: < Space to select ! >" 10 60 2 \
-    1 "Build GCC? (otherwise use pre-compiled version)" off \
-    2 "Build GCC in 64bit mode only?" off )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
-done
+    while : ; do
+      GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
+      --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+      --checklist "Choose Install settings: < Space to select ! >" 10 60 2 \
+      1 "Build GCC? (otherwise use pre-compiled version)" off \
+      2 "Build GCC in 64bit mode only?" off )
+      
+      if [ x"$?" == x"0" ]; then
+        break;
+      else
+        cancel_installer
+      fi
+    done
 
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-while : ; do  
-    GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
-    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-    --checklist "Choose Install settings: < Space to select ! >" 10 60 1 \
-    1 "Build GCC? (otherwise use pre-compiled version)" off )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
-done
+    while : ; do  
+      GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
+      --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+      --checklist "Choose Install settings: < Space to select ! >" 10 60 1 \
+      1 "Build GCC? (otherwise use pre-compiled version)" off )
+      
+      if [ x"$?" == x"0" ]; then
+        break;
+      else
+        cancel_installer
+      fi
+    done
   fi
 
   BUILD_GCC=No
@@ -1974,28 +2002,29 @@ fi
 
 #Mirror selection dialog
 while : ; do
-mirror=$(dialog --stdout \
---backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
---menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
-findClosest 'Autodetect closest' \
-optusnet 'Australia' \
-ufpr 'Brazil' \
-nchc 'China/Taiwan' \
-mesh 'Germany' \
-garr 'Italy' \
-jaist 'Japan' \
-puzzle 'Switzerland' \
-kent 'UK' \
-internap 'US' )
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
+  mirror=$(dialog --stdout \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+  --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
+  findClosest 'Autodetect closest' \
+  optusnet 'Australia' \
+  ufpr 'Brazil' \
+  nchc 'China/Taiwan' \
+  mesh 'Germany' \
+  garr 'Italy' \
+  jaist 'Japan' \
+  puzzle 'Switzerland' \
+  kent 'UK' \
+  internap 'US' )
+  
+  if [ x"$?" == x"0" ]; then
+    break;
+  else
+    cancel_installer
+  fi
 done
 
 #Detect and take care of fastest mirror
-if [ "$mirror" == "findClosest" ]; then
+if [ "x$mirror" == "xfindClosest" ]; then
   clear
 
   (
@@ -2022,7 +2051,7 @@ if [ "$mirror" == "findClosest" ]; then
   mirror_initial_line_count=5
   percent=0
   (
-  while [ "$mirror" == "" ] ; do
+  while [ "x$mirror" == "x" ] ; do
     mirror=`grep "picked:" tempmirror.log | cut -c20-`
     percent=`cat tempmirror.log | wc -l`
     percent=`expr \( $percent - $mirror_initial_line_count \) \* 100 / $mirror_total_count`
@@ -2043,30 +2072,31 @@ clear
 
 #Show to user the detected settings, last chance to cancel the installer
 while : ; do
-(dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
---title "Final settings - <ESC> to abort the Installer" \
---msgbox "-------------------------------------------------------------------------\n
-| =========   Detected that you are running: Ubuntu $version - $arch\n
-| \\      /    The choosed mirror is: $mirror\n
-|  \\    /     Logging: $LOG_OUTPUTS\n
-|   \\  /      Install mode: $INSTALLMODE\n
-|    \\/       Run apt-get upgrade ? $DOUPGRADE\n
-| *installOF* Build documentation ? $BUILD_DOCUMENTATION <nothing means no>\n
-| *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
-|             Use OpenFOAM gcc ? $USE_OF_GCC\n
--------------------------------------------------------------------------\n
-!For more info see documentation on code.google.com/p/openfoam-ubuntu" 14 80)
-if [ x"$?" == x"0" ]; then
-break;
-else
-cancel_installer
-fi
+  (dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+  --title "Final settings - <ESC> to abort the Installer" \
+  --msgbox "-------------------------------------------------------------------------\n
+  | =========   Detected that you are running: Ubuntu $version - $arch\n
+  | \\      /    The choosed mirror is: $mirror\n
+  |  \\    /     Logging: $LOG_OUTPUTS\n
+  |   \\  /      Install mode: $INSTALLMODE\n
+  |    \\/       Run apt-get upgrade ? $DOUPGRADE\n
+  | *installOF* Build documentation ? $BUILD_DOCUMENTATION <nothing means no>\n
+  | *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
+  |             Use OpenFOAM gcc ? $USE_OF_GCC\n
+  -------------------------------------------------------------------------\n
+  !For more info see documentation on code.google.com/p/openfoam-ubuntu" 15 80)
+  
+  if [ x"$?" == x"0" ]; then
+    break;
+  else
+    cancel_installer
+  fi
 done
 #END OF INTERACTIVE SECTION  ----------------------------------
 
 #Run usual install steps if in "fresh" or "server" install mode
 #If not, skip to the last few lines of the script
-if [ "$INSTALLMODE" != "update" ]; then
+if [ "x$INSTALLMODE" != "xupdate" ]; then
 
   #Defining packages to download
   define_packages_to_download
@@ -2114,7 +2144,7 @@ if [ "$INSTALLMODE" != "update" ]; then
     check_installation
 
     #Continue with the next steps, only if it's OK to continue!
-    if [ x"$FOAMINSTALLFAILED" == "x" -o x"$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
+    if [ "x$FOAMINSTALLFAILED" == "x" -o "x$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
       
       #build Qt
       build_Qt
@@ -2136,7 +2166,7 @@ if [ "$INSTALLMODE" != "update" ]; then
 
 fi
 
-if [ "$INSTALLMODE" == "update" ]; then
+if [ "x$INSTALLMODE" == "xupdate" ]; then
 
   #Activate OpenFOAM environment
   setOpenFOAMEnv
@@ -2151,11 +2181,12 @@ fi
 
 set +e
 
-if [ x"$FOAMINSTALLFAILED" == "x" -o x"$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
+if [ "x$FOAMINSTALLFAILED" == "x" -o "x$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
   # NOTE: run bash instead of exit, so the OpenFOAM environment stays operational on 
   #the calling terminal.
   cd_openfoam
-  bash
+  #calling bash from here seems to be a bad idea... doesn't seem to work properly...
+  #bash
 else
   #this shouldn't be necessary, but just in case:
   exit
