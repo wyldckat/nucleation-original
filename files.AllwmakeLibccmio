@@ -1,0 +1,29 @@
+//Source: http://www.cfd-online.com/OpenFOAM_Discus/messages/126/files-8822.unk
+//Thread: http://www.cfd-online.com/Forums/openfoam-bugs/62300-of15-libccmio-thus-ccm26tofoam-do-not-compile.html
+/* Note: make any changes to this file in wmakeFiles/ */
+
+adf = libadf
+$(adf)/ADF_fortran_2_c.c
+$(adf)/ADF_interface.c
+$(adf)/ADF_internals.c
+
+ccmio = libccmio
+$(ccmio)/ccmio.c
+$(ccmio)/ccmiocore.c
+$(ccmio)/ccmioprivate.c
+$(ccmio)/ccmioutility.c
+$(ccmio)/ccmioversion.c
+
+/*
+ * the cgns library is not used by ccmio
+ * retain for documentation purposes only
+ *
+ cgns = libcgns
+ $(cgns)/adf_cond.c
+ $(cgns)/adf_ftoc.c
+ $(cgns)/cgns_error.c
+ $(cgns)/cgns_internals.c
+ $(cgns)/cgnslib.c
+*/
+
+LIB = $(FOAM_LIBBIN)/libccmio

@@ -523,9 +523,12 @@ function define_packages_to_download()
     THIRDPARTY_BIN="ThirdParty-1.6.linux64Gcc.gtgz"
     
     isleftlarger_or_equal 8.04 $version
-    if [ "x$?" == "x1" ]; then
+    leq804=$?
+    isleftlarger_or_equal $version 10.04
+    if [ "x$?" == "x1" -o "x$leq804" == "x1" ]; then
       THIRDPARTY_BIN_CMAKE="ThirdParty-1.6.linuxGcc.gtgz"
     fi
+    unset leq804
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
     THIRDPARTY_BIN="ThirdParty-1.6.linuxGcc.gtgz"
   else
@@ -553,6 +556,8 @@ function define_packages_to_download()
     CCMIO_PACKAGE="${CCMIO_PACKAGE_VERSION}.tar.gz"
     CCMIO_BASEURL="https://wci.llnl.gov/codes/visit/3rd_party/"
     CCMIO_BASEURL_EXTRA_PRE="--no-check-certificate"
+    CCMIO_MAKEFILES_FILES="files.AllwmakeLibccmio"
+    CCMIO_MAKEFILES_OPTIONS="options.AllwmakeLibccmio"
   fi
 }
 
@@ -582,8 +587,11 @@ function install_ubuntu_packages()
   #for building gcc, these are necessary
   if [ "x$BUILD_GCC" == "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
-    if [ "x$BUILD_GCC_STRICT_64BIT" != "xYes" ]; then
-      PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL ia32libs"
+  fi
+
+  if [ "$arch" == "x86_64" ]; then
+    if [ "x$BUILD_GCC_STRICT_64BIT" != "xYes" -o "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then
+      PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL ia32-libs"
     fi
   fi
 
@@ -774,6 +782,8 @@ function download_files()
 
   if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
     do_wget "$CCMIO_BASEURL" "$CCMIO_PACKAGE" " " "$CCMIO_BASEURL_EXTRA_PRE"
+    do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_FILES"
+    do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_OPTIONS"
   fi
 }
 
@@ -795,11 +805,14 @@ function unpack_downloaded_files()
     pv $THIRDPARTY_BIN | tar -xz
   fi
   
-  #needed for Ubuntu 8.04 x86_64
+  #needed for Ubuntu 8.04 and 10.04 x86_64
   if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then 
     cd_openfoam
     echo "Untaring $THIRDPARTY_BIN_CMAKE"
     pv $THIRDPARTY_BIN_CMAKE | tar -xz ThirdParty-1.6/cmake-2.6.4
+    cd ThirdParty-1.6/cmake-2.6.4/platforms/
+    #this is necessary, since there isn't a pre-build made for 64bit
+    ln -s linux linux64
   fi
   
   if [ "x$BUILD_QT" == "xYes" ]; then
@@ -814,6 +827,13 @@ function unpack_downloaded_files()
     cd ThirdParty-1.6
     ln -s ../$CCMIO_PACKAGE $CCMIO_PACKAGE
     #NOTE: unpacking will be done by the AllwmakeLibccmio script
+    if [ -e "../$CCMIO_MAKEFILES_FILES" -a -e "../$CCMIO_MAKEFILES_OPTIONS" ]; then
+      if [ ! -d "wmakeFiles/libccmio/Make" ]; then
+        mkdir -p wmakeFiles/libccmio/Make
+      fi
+      cp "../$CCMIO_MAKEFILES_FILES" wmakeFiles/libccmio/Make/
+      cp "../$CCMIO_MAKEFILES_OPTIONS" wmakeFiles/libccmio/Make/
+    fi
   fi
 
   #copy modified makeGcc to here

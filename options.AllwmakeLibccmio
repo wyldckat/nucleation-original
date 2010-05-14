@@ -1,0 +1,5 @@
+//Source: http://www.cfd-online.com/OpenFOAM_Discus/messages/126/options-8823.unk
+//Thread: http://www.cfd-online.com/Forums/openfoam-bugs/62300-of15-libccmio-thus-ccm26tofoam-do-not-compile.html
+/* Note: make any changes to this file in wmakeFiles/ */
+
+/* EXE_INC = */
