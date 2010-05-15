@@ -438,6 +438,28 @@ echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
      -qmake)
          [ "$#" -ge 2 ] || usage "'$1' option requires an argument"
          export QMAKE_PATH=$2
+--- ../makeParaViewFunctions     2009-07-24 13:51:14.000000000 +0100
++++ makeParaViewFunctions       2010-05-15 18:39:33.000000000 +0100
+@@ -167,7 +167,7 @@
+
+ addQtSupport()
+ {
+-    [ "${withQTSUPPORT:=false}" = true ] || return
++  if [ "${withQTSUPPORT:=false}" = true ]; then
+
+     addCMakeVariable "PARAVIEW_BUILD_QT_GUI=ON"
+
+@@ -209,6 +209,11 @@
+         echo "*** Error: cannot find qmake either at \$QMAKE_PATH or in current \$PATH"
+         exit 1
+     fi
++  else
++    addCMakeVariable "PARAVIEW_BUILD_QT_GUI=OFF"
++    addCMakeVariable "PointSpritePlugin_BUILD_EXAMPLES=OFF"
++    addCMakeVariable "PARAVIEW_BUILD_PLUGIN_PointSprite=OFF"
++  fi
+ }
+
 ' | patch -p0
 cd $tmpVar
 unset tmpVar
