@@ -402,15 +402,22 @@ cd ThirdParty-1.6/
   
 echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
 +++ ./makeParaView  2010-04-18 21:50:31.609831213 +0100
-@@ -45,7 +45,7 @@
- # note: script will try to determine the appropriate python library.
- #       If it fails, specify the path using the PYTHON_LIBRARY variable
- withPYTHON=false
+@@ -45,13 +45,13 @@                                                                       
+ # note: script will try to determine the appropriate python library.                     
+ #       If it fails, specify the path using the PYTHON_LIBRARY variable                  
+ withPYTHON=false                                                                         
 -PYTHON_LIBRARY=""
 +PYTHON_LIBRARY="/usr/lib/libpython2.6.so"
  # PYTHON_LIBRARY="/usr/lib64/libpython2.6.so.1.0"
- 
+
  # MESA graphics support:
+ withMESA=false
+ MESA_INCLUDE="/usr/include/GL"
+-MESA_LIBRARY="/usr/lib64/libOSMesa.so"
++MESA_LIBRARY="/usr/lib/libOSMesa.so"
+
+ # extra QT gui support (useful for re-using the installation for engrid)
+ withQTSUPPORT=true
 @@ -75,6 +75,7 @@
    -python       with python (if not already enabled)
    -mesa         with mesa (if not already enabled)
@@ -656,6 +663,11 @@ function install_ubuntu_packages()
   #install qt4-dev and qt4-dev-tools only if the custom build isn't used
   if [ "x$BUILD_QT" != "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libqt4-dev qt4-dev-tools"
+  fi
+  
+  #install OSMesa when chosen for ParaView
+  if [ "x$BUILD_PARAVIEW_WITH_OSMESA" == "xYes" ]; then
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libosmesa6 libosmesa6-dev"
   fi
 
   #now remove the ones that are already installed
@@ -1718,6 +1730,10 @@ function build_ParaView()
         PARAVIEW_BUILD_OPTIONS="$PARAVIEW_BUILD_OPTIONS -python"
       fi
 
+      if [ "x$BUILD_PARAVIEW_WITH_OSMESA" == "xYes" ]; then
+        PARAVIEW_BUILD_OPTIONS="$PARAVIEW_BUILD_OPTIONS -mesa"
+      fi
+
       PARAVIEW_BUILD_LOG="$WM_THIRD_PARTY_DIR/build_ParaView.log"
 
       #set up traps...
@@ -1748,10 +1764,21 @@ function build_ParaView()
       echo "------------------------------------------------------"
       echo "Build ParaView:"
       if [ -e "$ParaView_DIR/bin/paraview" ]; then
+
         echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
         echo -e "Building ParaView finished successfully at:\n\t`date`"
         echo "ParaView is ready to use."
+
+      elif [ "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" -a "x$BUILD_PARAVIEW_WITH_MPI" == "xYes" -a \
+             -e "$ParaView_DIR/bin/pvserver" -a -e "$ParaView_DIR/bin/pvrenderserver" -a \
+             -e "$ParaView_DIR/bin/pvdataserver" ]; then
+
+        echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
+        echo -e "Building ParaView finished successfully at:\n\t`date`"
+        echo "ParaView server tools are ready to be used."
+
       else
+
         echo "Build process didn't finished with success. Please check the log file for more information:"
         echo -e "\t$PARAVIEW_BUILD_LOG"
         echo "You can post it at this forum thread:"
@@ -1977,17 +2004,19 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   BUILD_PARAVIEW_WITH_GUI=No
   BUILD_PARAVIEW_WITH_MPI=No
   BUILD_PARAVIEW_WITH_PYTHON=No
+  BUILD_PARAVIEW_WITH_OSMESA=No
   #ParaView configurations for a fresh install
   if [ "$INSTALLMODE" == "fresh" ]; then
     while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-      --checklist "Choose ParaView settings: < Space to select ! >" 15 52 5 \
+      --checklist "Choose ParaView settings: < Space to select ! >" 16 52 6 \
       1 "Do custom build of QT 4.3.5 ?" off \
       2 "Do custom build of ParaView ?" off \
       3 "Build ParaView with GUI ?" on \
-      4 "Build ParaView with MPI support ?" off \
-      5 "Build ParaView with Python support ?" off )
+      4 "Build ParaView with Python support ?" off \
+      5 "Build ParaView with MPI support ?" off \
+      6 "Build ParaView with OSMesa support ?" off )
 
       if [ x"$?" == x"0" ]; then
         break;
@@ -1996,13 +2025,15 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       fi
     done
   fi
+
   #Take care of unpack settings from PVSETTINGSOPTS
   for setting in $PVSETTINGSOPTS ; do
     if [ $setting == 1 ] ; then BUILD_QT=Yes ; fi
     if [ $setting == 2 ] ; then BUILD_PARAVIEW=Yes ; fi
     if [ $setting == 3 ] ; then BUILD_PARAVIEW_WITH_GUI=Yes ; fi
-    if [ $setting == 4 ] ; then BUILD_PARAVIEW_WITH_MPI=Yes ; fi
-    if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
+    if [ $setting == 4 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
+    if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_MPI=Yes ; fi
+    if [ $setting == 6 ] ; then BUILD_PARAVIEW_WITH_OSMESA=Yes ; fi
   done
 
   if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
@@ -2036,8 +2067,16 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
         BUILD_PARAVIEW=Yes
         dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
         --title "Non-optional setting detected!" \
-        --infobox "\nParaView will need to be built, since the pre-built version isn't enough for the chosen options" 10 70
+        --infobox "\nParaView will need to be built, since the pre-built version isn't enough for the chosen options." 10 70
     fi
+  fi
+
+  if [ "x$BUILD_PARAVIEW" == "xYes" -a "x$BUILD_PARAVIEW_WITH_MPI" == "xNo" -a \
+       "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" ]; then
+      BUILD_PARAVIEW_WITH_MPI=Yes
+      dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+      --title "Bad options detected!" \
+      --infobox "\nParaView must be built with either MPI or GUI. Since you've defined both Off, will assume server mode and turn on MPI." 10 70
   fi
 
   #GCC compiling settings
