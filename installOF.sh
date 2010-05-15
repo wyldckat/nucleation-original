@@ -867,8 +867,8 @@ function unpack_downloaded_files()
       if [ ! -d "wmakeFiles/libccmio/Make" ]; then
         mkdir -p wmakeFiles/libccmio/Make
       fi
-      cp "../$CCMIO_MAKEFILES_FILES" wmakeFiles/libccmio/Make/
-      cp "../$CCMIO_MAKEFILES_OPTIONS" wmakeFiles/libccmio/Make/
+      cp "../$CCMIO_MAKEFILES_FILES" wmakeFiles/libccmio/Make/files
+      cp "../$CCMIO_MAKEFILES_OPTIONS" wmakeFiles/libccmio/Make/options
     fi
   fi
 
