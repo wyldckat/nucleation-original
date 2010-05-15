@@ -439,7 +439,7 @@ echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
          [ "$#" -ge 2 ] || usage "'$1' option requires an argument"
          export QMAKE_PATH=$2
 --- ../makeParaViewFunctions     2009-07-24 13:51:14.000000000 +0100
-+++ makeParaViewFunctions       2010-05-15 18:39:33.000000000 +0100
++++ ./tools/makeParaViewFunctions       2010-05-15 18:39:33.000000000 +0100
 @@ -167,7 +167,7 @@
 
  addQtSupport()
