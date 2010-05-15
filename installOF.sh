@@ -402,20 +402,20 @@ cd ThirdParty-1.6/
   
 echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
 +++ ./makeParaView  2010-04-18 21:50:31.609831213 +0100
-@@ -45,13 +45,13 @@                                                                       
- # note: script will try to determine the appropriate python library.                     
- #       If it fails, specify the path using the PYTHON_LIBRARY variable                  
- withPYTHON=false                                                                         
+@@ -45,13 +45,13 @@
+ # note: script will try to determine the appropriate python library.
+ #       If it fails, specify the path using the PYTHON_LIBRARY variable
+ withPYTHON=false
 -PYTHON_LIBRARY=""
 +PYTHON_LIBRARY="/usr/lib/libpython2.6.so"
  # PYTHON_LIBRARY="/usr/lib64/libpython2.6.so.1.0"
-
+ 
  # MESA graphics support:
  withMESA=false
  MESA_INCLUDE="/usr/include/GL"
 -MESA_LIBRARY="/usr/lib64/libOSMesa.so"
 +MESA_LIBRARY="/usr/lib/libOSMesa.so"
-
+ 
  # extra QT gui support (useful for re-using the installation for engrid)
  withQTSUPPORT=true
 @@ -75,6 +75,7 @@
