@@ -53,7 +53,7 @@ function isleftlarger_or_equal()
 function ispackage_installed()
 {
   set +e
-  DPKGRESULTTMP=`dpkg-query -W -f='${Status}\n' $1 2>&1 | grep -e "not-installed" -e "No packages found"`
+  DPKGRESULTTMP=`dpkg-query -W -f='${Status}\n' $1 2>&1 | grep -e "not-installed" -e "No packages found" -e "deinstall"`
   if [ "x$DPKGRESULTTMP" == "x" ]; then
     return 1
   else
