@@ -1423,7 +1423,6 @@ function allwmake_openfoam_docs()
     echo "Build OpenFOAM:"
     echo -e "Doxygen started to build at:\n\t$BUILD_AWOPENFOAMDOC_START_TIME\n"
     echo -e "Doxygen finished at:\n\t`date`"
-    fi
     echo "------------------------------------------------------"
 
   fi
