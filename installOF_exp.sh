@@ -643,7 +643,7 @@ function install_ubuntu_packages()
   #for Ubuntu 10.04, a few more packages are needed
   isleftlarger_or_equal $version 10.04
   if [ x"$?" == x"1" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev freeglut3-dev"
   fi
 
   #for documentation, these are necessary
@@ -871,7 +871,9 @@ function unpack_downloaded_files()
   pv $THIRDPARTY_GENERAL | tar -xz
   
   #check if $THIRDPARTY_BIN is provided, because one could want to build from sources
-  if [ "x$THIRDPARTY_BIN" != "x" ]; then 
+  #TODO: in custom mode, it doesn't unpack because the only situation where it could be necessary is if 
+  #      the pre-built ParaView is required back again... and such option doesn't explicitly exist.
+  if [ "x$THIRDPARTY_BIN" != "x" -a "x$INSTALLMODE" != "xcustom" ]; then 
     cd_openfoam
     echo "Untaring $THIRDPARTY_BIN"
     pv $THIRDPARTY_BIN | tar -xz
@@ -1051,7 +1053,7 @@ function add_openfoam_to_bashrc()
   echo "------------------------------------------------------"
 
   #nuke ~/.bashrc entries that have references to the same script
-  cat ~/.bashrc | grep -v 'OpenFOAM/OpenFOAM-1.6.x/etc/bashrc' > ~/.bashrc.new
+  cat ~/.bashrc | grep -v "$PATHOF/OpenFOAM-1.6.x/etc/bashrc" > ~/.bashrc.new
   cp ~/.bashrc ~/.bashrc.old
   mv ~/.bashrc.new ~/.bashrc
   if [ "x$USE_ALIAS_FOR_BASHRC" == "xYes" ]; then
@@ -1206,14 +1208,9 @@ function build_awopenfoam_progress_dialog()
     ( #while true is used as a containment cycle...
     while true;
     do
-      if [ "x$BUILD_AWOPENFOAMDOC_START_TIME" == "x" -a -e "$BUILD_AWOPENFOAM_LOG" ]; then
+      if [ -e "$BUILD_AWOPENFOAM_LOG" ]; then
         BUILD_AWOPENFOAM_MAKECOUNT=`grep 'WMAKE timing start' "$BUILD_AWOPENFOAM_LOG" | wc -l`
         nowpercent=`expr $BUILD_AWOPENFOAM_MAKECOUNT \* 100 / $BUILD_AWOPENFOAM_ESTIM_BUILD_COUNT`
-      else
-        if [ -e "$BUILD_AWOPENFOAMDOC_LOG" ]; then
-          BUILD_AWOPENFOAM_NOWCOUNT=`cat "$BUILD_AWOPENFOAMDOC_LOG" | grep -e "^Parsing file" -e "^Generating code for file" -e "^Generating docs for" -e "^Generating dependency graph for directory" | wc -l`
-          nowpercent=`expr $BUILD_AWOPENFOAM_NOWCOUNT \* 100 / $BUILD_AWOPENFOAMDOC_ESTIMCOUNT`
-        fi
       fi
       
       if [ "x$nowpercent" != "x$percent" ]; then
@@ -1223,25 +1220,13 @@ function build_awopenfoam_progress_dialog()
       echo $percent
       echo "XXX"
       echo "Build OpenFOAM:"
-      if [ "x$BUILD_AWOPENFOAMDOC_START_TIME" == "x" ]; then
-        echo "The Allwmake build process is going to be logged in the file:"
-        echo "  $BUILD_AWOPENFOAM_LOG"
-        echo "If you want to, you can follow the progress of this build"
-        echo "process, by opening a new terminal and running:"
-        echo "  tail -F $BUILD_AWOPENFOAM_LOG"
-      else
-        echo "The Doxygen build process is going to be logged in the file:"
-        echo "  $BUILD_AWOPENFOAMDOC_LOG"
-        echo "If you want to, you can follow the progress of this build"
-        echo "process, by opening a new terminal and running:"
-        echo "  tail -F $BUILD_AWOPENFOAMDOC_LOG"
-      fi
+      echo "The Allwmake build process is going to be logged in the file:"
+      echo "  $BUILD_AWOPENFOAM_LOG"
+      echo "If you want to, you can follow the progress of this build"
+      echo "process, by opening a new terminal and running:"
+      echo "  tail -F $BUILD_AWOPENFOAM_LOG"
       echo "WARNING: THIS CAN TAKE HOURS..."
       echo -e "\nAllwmake started to build at:\n\t$BUILD_AWOPENFOAM_START_TIME"
-      if [ "x$BUILD_AWOPENFOAMDOC_START_TIME" != "x" ]; then
-        echo -e "Allwmake finished building at:\n\t$BUILD_AWOPENFOAM_END_TIME\n"
-        echo -e "Doxygen started to build OpenFOAM code documentation at:\n\t$BUILD_AWOPENFOAMDOC_START_TIME"
-      fi
       echo -e "\nLast progress update made at:\n\t$BUILD_AWOPENFOAM_UPDATE_TIME"
       echo "XXX"
 
@@ -1256,36 +1241,11 @@ function build_awopenfoam_progress_dialog()
       monitor_sleep $BUILD_AWOPENFOAM_PID 30
 
       if ! ps -p $BUILD_AWOPENFOAM_PID > /dev/null; then
-        if [ "x$BUILD_DOCUMENTATION" != "x" ]; then
-          if [ "x$BUILD_AWOPENFOAMDOC_START_TIME" == "x" ]; then
-            #first calculate estimate
-            percent=0
-            echo $percent
-            echo "XXX"
-            echo "Calculating estimate for documentation progress..."
-            echo "XXX"
-            BUILD_AWOPENFOAMDOC_FILECOUNT=`find * | grep -v "/lnInclude/" | grep -v "/t/" | grep -e "^src/" -e "^applications/utilities" -e "^applications/solvers" | grep -e ".H$" -e ".C$" | wc -l`
-            BUILD_AWOPENFOAMDOC_ESTIMCOUNT=`expr $BUILD_AWOPENFOAMDOC_FILECOUNT \* 385 / 100`
-            cd doc
-            echo "Now it's going to build the documentation..."
-            BUILD_AWOPENFOAMDOC_LOG="$WM_PROJECT_DIR/docmake.log"
-            BUILD_AWOPENFOAM_END_TIME=`date`
-            #launch wmake all asynchronously
-            bash -c "time wmake all > ${BUILD_AWOPENFOAMDOC_LOG} 2>&1" >> ${BUILD_AWOPENFOAMDOC_LOG} 2>&1 &
-            BUILD_AWOPENFOAM_PID=$!
-            BUILD_AWOPENFOAMDOC_START_TIME=`date`
-            BUILD_AWOPENFOAM_UPDATE_TIME=$BUILD_AWOPENFOAMDOC_START_TIME
-            cd ..
-          else
-            break;
-          fi
-        else
-          break;
-        fi
+        break;
       fi
     done
     ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
-        --title "Building OpenFOAM" --gauge "Starting..." 24 80 $percent
+        --title "Building OpenFOAM" --gauge "Starting..." 20 80 $percent
   fi
 
   #monitor here too, to wait for kill code, when issued
@@ -1350,12 +1310,123 @@ function allwmake_openfoam()
   echo "------------------------------------------------------"
   echo "Build OpenFOAM:"
   echo -e "Allwmake started to build at:\n\t$BUILD_AWOPENFOAM_START_TIME\n"
-  if [ "x$BUILD_AWOPENFOAMDOC_START_TIME" == "x" ]; then
-    echo -e "Allwmake finished at:\n\t`date`"
-  else
-    echo -e "Allwmake + Doxygen finished at:\n\t`date`"
-  fi
+  echo -e "Allwmake finished at:\n\t`date`"
   echo "------------------------------------------------------"
+}
+
+#provide the user with a progress bar and timings for building OpenFOAM
+function build_awopenfoam_docs_progress_dialog()
+{
+  if [ "x$BUILD_AWOPENFOAM_MUST_KILL" == "xYes" ]; then
+    echo -e "\n\nKill code issued... please wait..."
+    echo -e "NOTE: The kill code will take a few seconds to affect all child processes."
+    killgroup $BUILD_AWOPENFOAM_PID
+
+  else
+
+    ( #while true is used as a containment cycle...
+    while true;
+    do
+      if [ -e "$BUILD_AWOPENFOAMDOC_LOG" ]; then
+        BUILD_AWOPENFOAM_NOWCOUNT=`cat "$BUILD_AWOPENFOAMDOC_LOG" | grep -e "^Parsing file" -e "^Generating code for file" -e "^Generating docs for" -e "^Generating dependency graph for directory" | wc -l`
+        nowpercent=`expr $BUILD_AWOPENFOAM_NOWCOUNT \* 100 / $BUILD_AWOPENFOAMDOC_ESTIMCOUNT`
+      fi
+      
+      if [ "x$nowpercent" != "x$percent" ]; then
+        percent=$nowpercent
+        BUILD_AWOPENFOAM_UPDATE_TIME=`date`
+      fi
+
+      echo $percent
+      echo "XXX"
+      echo "Build OpenFOAM documentation:"
+      echo "The Doxygen build process is going to be logged in the file:"
+      echo "  $BUILD_AWOPENFOAMDOC_LOG"
+      echo "If you want to, you can follow the progress of this build"
+      echo "process, by opening a new terminal and running:"
+      echo "  tail -F $BUILD_AWOPENFOAMDOC_LOG"
+      echo "WARNING: THIS CAN TAKE HOURS..."
+      echo -e "Doxygen started to build OpenFOAM code documentation at:\n\t$BUILD_AWOPENFOAMDOC_START_TIME"
+      echo -e "\nLast progress update made at:\n\t$BUILD_AWOPENFOAM_UPDATE_TIME"
+      echo "XXX"
+
+      #this provides a better monitorization of the process itself... i.e., if it has already stopped!
+      #30 second update
+      monitor_sleep $BUILD_AWOPENFOAM_PID 30
+
+      if ! ps -p $BUILD_AWOPENFOAM_PID > /dev/null; then
+        break;
+      fi
+    done
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+        --title "Building OpenFOAM" --gauge "Starting..." 24 80 $percent
+  fi
+
+  #monitor here too, to wait for kill code, when issued
+  monitor_sleep $BUILD_AWOPENFOAM_PID 30
+}
+
+#this indicates to the user that we have it under control...
+function build_awopenfoam_docs_ctrl_c_triggered()
+{
+  BUILD_AWOPENFOAM_MUST_KILL="Yes"
+  build_awopenfoam_docs_progress_dialog
+}
+
+#do an Allwmake on OpenFOAM 1.6.x
+function allwmake_openfoam_docs()
+{
+  if [ "x$BUILD_DOCUMENTATION" != "x" ]; then
+
+    #set up environment, just in case we forget about it!
+    if [ "x$WM_PROJECT_DIR" == "x" ]; then
+      setOpenFOAMEnv
+    fi
+
+    cd $WM_PROJECT_DIR
+    BUILD_AWOPENFOAMDOC_LOG="$WM_PROJECT_DIR/docmake.log"
+
+    #set up traps...
+    trap build_awopenfoam_docs_ctrl_c_triggered SIGINT SIGQUIT SIGTERM
+
+    echo "------------------------------------------------------"
+    echo "Build OpenFOAM code documentation:"
+    echo "Calculating building estimates, please wait..."
+    #first calculate estimate
+    BUILD_AWOPENFOAMDOC_FILECOUNT=`find * | grep -v "/lnInclude/" | grep -v "/t/" | grep -e "^src/" -e "^applications/utilities" -e "^applications/solvers" | grep -e ".H$" -e ".C$" | wc -l`
+    BUILD_AWOPENFOAMDOC_ESTIMCOUNT=`expr $BUILD_AWOPENFOAMDOC_FILECOUNT \* 385 / 100`
+    echo "Now it's going to build the documentation..."
+
+    #launch wmake all asynchronously
+    cd doc
+    bash -c "time wmake all > ${BUILD_AWOPENFOAMDOC_LOG} 2>&1" >> ${BUILD_AWOPENFOAMDOC_LOG} 2>&1 &
+    BUILD_AWOPENFOAM_PID=$!
+    BUILD_AWOPENFOAMDOC_START_TIME=`date`
+    BUILD_AWOPENFOAM_UPDATE_TIME=$BUILD_AWOPENFOAMDOC_START_TIME
+    cd ..
+    echo "------------------------------------------------------"
+
+    #track build progress
+    percent=0
+    build_awopenfoam_docs_progress_dialog
+    
+    #wait for kill code to change
+    clear
+    if ! ps -p $BUILD_AWOPENFOAM_PID > /dev/null && [ "x$BUILD_AWOPENFOAM_MUST_KILL" != "x" ]; then
+      echo "Kill code issued with success. The script will continue execution."
+    fi
+
+    #clear traps
+    trap - SIGINT SIGQUIT SIGTERM
+
+    echo "------------------------------------------------------"
+    echo "Build OpenFOAM:"
+    echo -e "Doxygen started to build at:\n\t$BUILD_AWOPENFOAMDOC_START_TIME\n"
+    echo -e "Doxygen finished at:\n\t`date`"
+    fi
+    echo "------------------------------------------------------"
+
+  fi
 }
 
 function continue_after_failed_openfoam()
@@ -1364,9 +1435,11 @@ function continue_after_failed_openfoam()
     FOAMINSTALLFAILED_BUTCONT="No"
     echo -e "\n------------------------------------------------------\n"
     echo "Although the previous step seems to have failed, do you wish to continue with the remaining steps?"
-    
-    if [ "x$BUILD_CCM26TOFOAM" == "xYes" -o "x$BUILD_PARAVIEW" == "xYes" -o "x$BUILD_QT" == "xYes" ]; then 
+
+    if [ "x$BUILD_DOCUMENTATION" != "x" -o "x$BUILD_CCM26TOFOAM" == "xYes" -o \
+         "x$BUILD_PARAVIEW" == "xYes" -o "x$BUILD_QT" == "xYes" ]; then 
       echo "Missing steps are:"
+      if [ "x$BUILD_DOCUMENTATION" != "x" ]; then echo "- Building OpenFOAM's code documentation"; fi
       if [ "x$BUILD_QT" == "xYes" ]; then echo "- Building Qt"; fi
       if [ "x$BUILD_PARAVIEW" == "xYes" ]; then echo "- Building ParaView"; fi
       if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then echo "- Building ccm26ToFoam"; fi
@@ -1980,7 +2053,7 @@ if [ "x$INSTALLMODE" == "xcustom" ]; then
   while : ; do
     CUSTOMOPTS=$(dialog --stdout --separate-output \
     --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-    --checklist "Build only parts without OpenFOAM: < Space to select ! >" 15 50 5 \
+    --checklist "Build only parts without OpenFOAM: < Space to select ! >" 15 50 2 \
     1 "Build OpenFOAM optionals" off \
     2 "Build ParaView with(out) Qt" off )
 
@@ -2058,7 +2131,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
       --checklist "Choose ParaView settings: < Space to select ! >" 16 52 6 \
-      1 "Do custom build of QT 4.3.5 ?" off \
+      1 "Do custom build of Qt 4.3.5 ?" off \
       2 "Do custom build of ParaView ?" off \
       3 "Build ParaView with GUI ?" on \
       4 "Build ParaView with Python support ?" off \
@@ -2337,7 +2410,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 
       #do an Allwmake on OpenFOAM 1.6.x
       allwmake_openfoam
-
+      
       #check if the installation is complete
       check_installation
 
@@ -2346,6 +2419,9 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     #Continue with the next steps, only if it's OK to continue!
     if [ "x$FOAMINSTALLFAILED" == "x" -o "x$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
       
+      #build Doxygen documentation of the code
+      allwmake_openfoam_docs
+
       #build Qt
       build_Qt
       
