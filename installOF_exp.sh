@@ -1961,7 +1961,7 @@ while : ; do
   --radiolist 'Choose the Install Mode: < default: fresh >' 11 50 4 \
   'fresh'   'Make new Install' on \
   'update'   'Update currenty install'  off \
-  'server'   'ParaView with: -GUI +MPI'  off \ 
+  'server'   'ParaView with: -GUI +MPI'  off \
   'custom'   'Use this only after installation'  off )
 
   if [ x"$?" == x"0" ]; then
