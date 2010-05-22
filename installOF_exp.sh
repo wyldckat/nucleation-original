@@ -10,7 +10,7 @@
 #
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
-#TODO 1 - Create advanced settings, than agregate all nontrivial settings in there
+#TODO 1 - Create advanced settings, than agregate all nontrivial settings in there - only partially implemented...
 #TODO 2 - enable SYSTEMOPENMPI in bashrc
 #TODO 3 - use wmakeScheduler for multiple building hosts"
 
@@ -643,7 +643,10 @@ function install_ubuntu_packages()
   #for Ubuntu 10.04, a few more packages are needed
   isleftlarger_or_equal $version 10.04
   if [ x"$?" == x"1" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev freeglut3-dev"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
+    if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
+      PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL freeglut3-dev"
+    fi
   fi
 
   #for documentation, these are necessary
@@ -2070,6 +2073,7 @@ if [ "x$INSTALLMODE" == "xcustom" ]; then
   done
 
   if [ "x$CUSTOMOPTS_OFOPTIONALS" == "xNo" -a "x$CUSTOMOPTS_PARAVIEW" == "xNo" ]; then
+    clear
     echo "Nothing to do... exiting."
     exit 0
   fi
