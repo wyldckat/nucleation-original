@@ -869,10 +869,12 @@ function unpack_downloaded_files()
 
   echo "------------------------------------------------------"
   echo "Untar files -- This can take time"
-  echo "Untaring $THIRDPARTY_GENERAL"
-  #TODO: option "-n" in "pv" will allow the usage of "dialog --gauge" :)
-  pv $THIRDPARTY_GENERAL | tar -xz
-  
+  if [ "x$INSTALLMODE" != "xcustom" ]; then 
+    echo "Untaring $THIRDPARTY_GENERAL"
+    #TODO: option "-n" in "pv" will allow the usage of "dialog --gauge" :)
+    pv $THIRDPARTY_GENERAL | tar -xz
+  fi
+
   #check if $THIRDPARTY_BIN is provided, because one could want to build from sources
   #TODO: in custom mode, it doesn't unpack because the only situation where it could be necessary is if 
   #      the pre-built ParaView is required back again... and such option doesn't explicitly exist.
@@ -2055,7 +2057,7 @@ if [ "x$INSTALLMODE" == "xcustom" ]; then
   while : ; do
     CUSTOMOPTS=$(dialog --stdout --separate-output \
     --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-    --checklist "Build only parts without OpenFOAM: < Space to select ! >" 15 50 2 \
+    --checklist "Build only parts, excluding OpenFOAM: < Space to select ! >" 15 65 2 \
     1 "Build OpenFOAM optionals" off \
     2 "Build ParaView with(out) Qt" off )
 
