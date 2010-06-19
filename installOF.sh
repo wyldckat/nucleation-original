@@ -638,8 +638,8 @@ function install_ubuntu_packages()
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL curl"
   fi
   
-  #for Ubuntu 10.04, a few more packages are needed
-  isleftlarger_or_equal $version 10.04
+  #for Ubuntu 9.10 and 10.04, a few more packages are needed
+  isleftlarger_or_equal $version 9.10
   if [ x"$?" == x"1" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
     if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
@@ -948,6 +948,9 @@ function OpenFOAM_git_clone()
   fi
   ln -s "$PATHOF/ThirdParty-1.6" "$PATHOF/ThirdParty-1.6.x"
   git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
+  OpenFOAM_git_error=$?
+  
+  continue_after_failed_openfoam_git
 }
 
 
@@ -1383,6 +1386,21 @@ function continue_after_failed_openfoam()
   fi
 }
 
+function continue_after_failed_openfoam_git()
+{
+  if [ "x$OpenFOAM_git_error" != "x0" ]; then
+    echo -e "\n------------------------------------------------------\n"
+    echo "The previous git operation failed, which without it continuing this script may be useless."
+    echo "But do you wish continue nonetheless? (yes or no): "
+    read casestat;
+    case $casestat in
+      no | n | N | No | NO) exit 0;;
+    esac
+    unset casestat
+    echo "------------------------------------------------------"
+  fi
+}
+
 #check if the installation is complete
 function check_installation()
 {
@@ -1501,6 +1519,9 @@ function OpenFOAM_git_pull()
   echo "Let's do a git pull"
   echo "------------------------------------------------------"
   git pull
+  OpenFOAM_git_error=$?
+  
+  continue_after_failed_openfoam_git
 }
 
 #provide the user with a progress bar and timings for building Qt
@@ -1692,6 +1713,16 @@ function build_ParaView_ctrl_c_triggered()
   build_ParaView_progress_dialog
 }
 
+function hookup_Qt_Libs_with_ParaView()
+{
+  if [ "x$BUILD_QT" == "xYes" ]; then
+    for a in ${QT_PLATFORM_PATH}/lib/*.4; do
+      b=`echo $a | sed -e 's/.*\/\(.*\)$/\1/'`
+      ln -s $a ${ParaView_DIR}/bin/$b
+    done
+  fi
+}
+
 function build_ParaView()
 {
   if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
@@ -1768,6 +1799,9 @@ function build_ParaView()
       echo "Build ParaView:"
       if [ -e "$ParaView_DIR/bin/paraview" ]; then
 
+        #this will make links in ParaView's bin folder to the custom build of Qt's libraries
+        hookup_Qt_Libs_with_ParaView
+        
         echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
         echo -e "Building ParaView finished successfully at:\n\t`date`"
         echo "ParaView is ready to use."
@@ -1776,6 +1810,9 @@ function build_ParaView()
              -e "$ParaView_DIR/bin/pvserver" -a -e "$ParaView_DIR/bin/pvrenderserver" -a \
              -e "$ParaView_DIR/bin/pvdataserver" ]; then
 
+        #this will make links in ParaView's bin folder to the custom build of Qt's libraries
+        hookup_Qt_Libs_with_ParaView
+        
         echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
         echo -e "Building ParaView finished successfully at:\n\t`date`"
         echo "ParaView server tools are ready to be used."
@@ -2013,13 +2050,13 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-      --checklist "Choose ParaView settings: < Space to select ! >" 16 52 6 \
+      --checklist "Choose ParaView settings: < Space to select ! >" 16 59 6 \
       1 "Do custom build of QT 4.3.5 ?" off \
       2 "Do custom build of ParaView ?" off \
       3 "Build ParaView with GUI ?" on \
       4 "Build ParaView with Python support ?" off \
       5 "Build ParaView with MPI support ?" off \
-      6 "Build ParaView with OSMesa support ?" off )
+      6 "Build ParaView with OSMesa (without GUI) ?" off )
 
       if [ x"$?" == x"0" ]; then
         break;
