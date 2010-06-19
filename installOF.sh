@@ -642,6 +642,9 @@ function install_ubuntu_packages()
   isleftlarger_or_equal $version 10.04
   if [ x"$?" == x"1" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
+    if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
+      PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL freeglut3-dev"
+    fi
   fi
 
   #for documentation, these are necessary
@@ -2037,10 +2040,11 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   done
 
   if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
+      BUILD_QT=Yes
       BUILD_PARAVIEW=Yes
       dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
       --title "Non-optional setting detected!" \
-      --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of ParaView and PV3FoamReader" 5 70
+      --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of Qt, ParaView and PV3FoamReader" 5 70
   fi
   if [ "$version" == "8.04" ]; then
     if [ "x$BUILD_PARAVIEW" != "Yes" -o "x$BUILD_QT" != "xYes" ]; then
