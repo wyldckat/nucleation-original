@@ -1004,7 +1004,7 @@ function apply_patches_fixes()
       cd ThirdParty-1.6/paraview-3.6.1/platforms/linux64Gcc/bin
     fi
     mv pqClientDocFinder.txt pqClientDocFinder_orig.txt
-    cat pqClientDocFinder_orig.txt | sed 's/\/home\/dm2\/henry\/OpenFOAM/'${PATHOF}'/' > ./pqClientDocFinder.txt
+    cat pqClientDocFinder_orig.txt | sed -e 's=/home/dm2/henry/OpenFOAM='${PATHOF}'=' > ./pqClientDocFinder.txt
   fi
 
   cd_openfoam #this is a precautionary measure
