@@ -609,7 +609,7 @@ function define_packages_to_download()
      KV_PV_DIR="ParaView-3.8.0-Linux-x86_64"
   elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
      KV_PV_FILE="ParaView-3.8.0-Linux-i686.tar.gz"
-     KV_PV_DIR="ParaView-3.8.0-Linux-x86_64"
+     KV_PV_DIR="ParaView-3.8.0-Linux-i686"
   else
     echo "Sorry, architecture not recognized, aborting."
     exit 1
@@ -2041,6 +2041,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   DOUPGRADE=No ; BUILD_DOCUMENTATION=
   USE_ALIAS_FOR_BASHRC=No ; USE_OF_GCC=No
   BUILD_CCM26TOFOAM=No
+  USE_REPO_PV=No ; USE_KITWARE_PV=No
   for setting in $SETTINGSOPTS ; do
     if [ $setting == 1 ] ; then DOUPGRADE=Yes ; fi
     if [ $setting == 2 ] ; then BUILD_DOCUMENTATION=doc ; fi
@@ -2354,8 +2355,6 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       
     fi
   fi
-
-  #unpack Kitware ParaView if neccessary
 
   #final messages and instructions
   final_messages_for_clean_install
