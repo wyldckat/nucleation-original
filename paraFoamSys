@@ -1,0 +1,149 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+#  \\    /   O peration     |
+#   \\  /    A nd           | Copyright (C) 1991-2008 OpenCFD Ltd.
+#    \\/     M anipulation  |
+#-------------------------------------------------------------------------------
+# License
+#     This file is part of OpenFOAM.
+#
+#     OpenFOAM is free software; you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by the
+#     Free Software Foundation; either version 2 of the License, or (at your
+#     option) any later version.
+#
+#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#     for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with OpenFOAM; if not, write to the Free Software Foundation,
+#     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+#
+# Script
+#     paraFoam
+#
+# Description
+#     This script is part of the OpenFoam installer
+#     It will enable you to view OpenFoam results with the system paraview
+#
+#------------------------------------------------------------------------------
+Script=${0##*/}
+
+usage() {
+   while [ "$#" -ge 1 ]; do echo "$1"; shift; done
+   cat<<USAGE
+
+usage: $Script [-case dir] [-time time] [-latestTime] [-data vtkFile] [-clean]
+
+* start paraview $ParaView_VERSION with the OpenFOAM libraries
+* default action will be to load an entire dataset
+* clean option will remove VTK directory!
+* script will only accept one option at a time
+
+USAGE
+   exit 1
+}
+
+getDeltaT() {
+   DELTAT="$(cat system/controlDict | grep 'writeInterval' | awk '{print $2}')"
+}
+
+getPrecision() {
+   PRECISION="$(cat system/controlDict | grep 'timePrecision' | awk '{print $2}')"
+}
+
+# get a sensible caseName
+caseName=${PWD##*/}
+
+# parse options
+if [ "$#" -gt 0 ]; then
+   case "$1" in
+   -h | -help)
+      usage
+      exit
+      ;;
+   -case)
+      shift
+      caseDir=$1
+      [ "$#" -ge 1 ] || usage "'-case' option requires an argument"
+      cd "$caseDir" 2>/dev/null || usage "directory does not exist:  '$caseDir'"
+      echo "foamToVTK"
+      echo "paraview "--data=VTK/$caseDir..vtk""
+      exit
+      ;;
+   -time)
+      echo "using time option!"
+      shift
+      caseTime=$1
+      [ "$#" -ge 1 ] || usage "'-time' option requires an argument"
+      #foamToVTK -time $1
+      getDeltaT
+      echo "writeInterval: $DELTAT"
+      echo "caseTime: $caseTime"
+      FILENO="$(echo "scale=4; $caseTime/$DELTAT" | bc | awk -F. '{print $1}')" # | bc)"
+      echo "${caseName}_${FILENO}.vtk"
+      #paraview --data=VTK/caseName_$FILENO.vtk
+      exit
+      ;;
+   -latestTime)
+      [ "$#" -ge 1 ] || usage "ignoring additional arguments"
+      echo "using latestTime option"
+      # would improve performance a lot if we check if file is already there
+      foamToVTK -latestTime > f2vtk.log
+      caseTime="$(grep "time =" f2vtk.log | awk -F'= ' '{print $2}')"
+      caseData="$(grep "Internal" f2vtk.log | awk -F'VTK/' '{print $2}' | tr -d '\"')"
+      #rm f2vtk.log
+      echo "time: ${caseTime}, data: ${caseData}"
+      cd VTK/
+      echo "$(pwd)"
+      paraview --data=$caseData
+      exit
+      ;;
+   -data)
+      shift
+      caseData=$1
+      [ "$#" -ge 1 ] || usage "'-data' option requires an argument"
+      #paraview --data=$1
+      exit
+      ;;
+   -clean)
+      #rm -r VTK
+      exit
+      ;;
+   *)
+      usage "unknown option/argument: '$*'"
+      exit
+      ;;
+   esac
+fi
+
+echo "foamToVTK"
+echo "paraview "--data=VTK/$caseName..vtk""
+
+# get a sensible caseName
+#caseName=${PWD##*/}
+
+# parent directory for normal or parallel results
+#case "$caseName" in
+#   processor*) parentDir=".." ;;
+#   *)          parentDir="."  ;;
+#esac
+
+# check existence of essential files
+#for check in system/controlDict
+#do
+#   [ -s "$parentDir/$check" ] || usage "file does not exist:  '$parentDir/$check'"
+#done
+
+#caseFile="$caseName.OpenFOAM"
+
+   # Clean up on termination and on Ctrl-C
+#   trap "rm -f $caseFile 2>/dev/null; exit 0" EXIT TERM INT
+#   touch $caseFile
+#   paraview --data=$caseFile
+
+#------------------------------------------------------------------------------

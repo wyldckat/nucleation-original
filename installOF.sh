@@ -600,6 +600,25 @@ function define_packages_to_download()
     echo "Sorry, architecture not recognized, aborting."
     exit 1
   fi
+
+  #Kitware paraview files to download if USE_KITWARE_PV is selected
+  KV_PV_BASEURL="http://www.paraview.org/files/v3.8/"
+  if [ "$arch" == "x86_64" ]; then
+     #need dir for untaring
+     KV_PV_FILE="ParaView-3.8.0-Linux-x86_64.tar.gz"
+     KV_PV_DIR="ParaView-3.8.0-Linux-x86_64"
+  elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
+     KV_PV_FILE="ParaView-3.8.0-Linux-i686.tar.gz"
+     KV_PV_DIR="ParaView-3.8.0-Linux-x86_64"
+  else
+    echo "Sorry, architecture not recognized, aborting."
+    exit 1
+  fi
+
+  #Repository paraview -> upgraded paraFoam script
+  if [ "x$USE_REPO_PV" == "xYes" ]; then
+    PFOAM_PATCHFILE="paraFoamSys"
+  fi
   
   #patch file for MPFR for gcc 4.3.3 to build properly
   MPFRPATCHFILE="patchMPFR"
@@ -668,6 +687,11 @@ function install_ubuntu_packages()
   #install OSMesa when chosen for ParaView
   if [ "x$BUILD_PARAVIEW_WITH_OSMESA" == "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libosmesa6 libosmesa6-dev"
+  fi
+
+  #if paraview from repository option was selected, add it to the list of packages
+  if [ "x$USE_REPO_PV" == "xYes" ]; then
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL paraview"
   fi
 
   #now remove the ones that are already installed
@@ -855,6 +879,16 @@ function download_files()
     do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_FILES"
     do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_OPTIONS"
   fi
+ 
+  if [ "$USE_KITWARE_PV" == "xYes" ]; then
+    #get paraview 3.8.1 from kitware, which has native openfoam reader
+    do_wget "$KV_PV_BASEURL" "$KV_PV_FILE"
+  fi
+
+  if [ "$USE_REPO_PV" == "xYes" ]; then
+    #get our patched version of paraFoam -> paraFoamSys
+    do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$PFOAM_PATCHFILE"
+  fi
 }
 
 #Unpack downloaded files
@@ -883,6 +917,14 @@ function unpack_downloaded_files()
     cd ThirdParty-1.6/cmake-2.6.4/platforms/
     #this is necessary, since there isn't a pre-build made for 64bit
     ln -s linux linux64
+  fi
+
+  if [ "x$USE_KITWARE_PV" != "xYes" ]; then
+    cd_openfoam
+    echo "Untaring $KV_PV_FILE"
+    pv $KV_PV_FILE | tar -xz
+    #put ParaView in 3rd Party directory
+    mv "$KV_PV_DIR" "ThirdParty-1.6/$KV_PV_DIR"
   fi
   
   if [ "x$BUILD_QT" == "xYes" ]; then
@@ -1056,6 +1098,11 @@ function add_openfoam_to_bashrc()
     echo -e "alias startFoam=\". $PATHOF/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
   else
     echo ". $PATHOF/OpenFOAM-1.6.x/etc/bashrc" >> ~/.bashrc
+  fi
+
+  #add kitware paraview to path
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
+     echo "PATH=$PATHOF/OpenFOAM-1.6.x/ThirdParty-1.6/$KV_PV_DIR/bin:$PATH" >> .bashrc
   fi
 }
 
@@ -1979,7 +2026,9 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     2 "Build OpenFOAM docs" off \
     3 "Use startFoam alias" on \
     4 "Use OpenFOAM gcc compiler" on \
-    5 "Build ccm26ToFoam" off )
+    5 "Build ccm26ToFoam" off \
+    6 "Install ParaView from repository" off \
+    7 "Download latest ParaView from Kitware" on )
 
     if [ x"$?" == x"0" ]; then
       break;
@@ -1998,6 +2047,8 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     if [ $setting == 3 ] ; then USE_ALIAS_FOR_BASHRC=Yes ; fi
     if [ $setting == 4 ] ; then USE_OF_GCC=Yes ; fi
     if [ $setting == 5 ] ; then BUILD_CCM26TOFOAM=Yes ; fi
+    if [ $setting == 6 ] ; then USE_REPO_PV=Yes ; fi
+    if [ $setting == 7 ] ; then USE_KITWARE_PV=Yes ; fi
   done
   BUILD_QT=No
   BUILD_PARAVIEW=No
@@ -2005,6 +2056,10 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   BUILD_PARAVIEW_WITH_MPI=No
   BUILD_PARAVIEW_WITH_PYTHON=No
   BUILD_PARAVIEW_WITH_OSMESA=No
+
+  #skip Paraview Build options if install from Repo or Kitware was selected
+  if [ "$USE_REPO_PV" == "Yes" or "$USE_KITWARE_PV" == "Yes"] ; then INSTALLMODE=custom ; fi
+
   #ParaView configurations for a fresh install
   if [ "$INSTALLMODE" == "fresh" ]; then
     while : ; do
@@ -2299,6 +2354,8 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       
     fi
   fi
+
+  #unpack Kitware ParaView if neccessary
 
   #final messages and instructions
   final_messages_for_clean_install
