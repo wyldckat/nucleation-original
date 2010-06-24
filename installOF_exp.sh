@@ -632,7 +632,7 @@ function define_packages_to_download()
 function install_ubuntu_packages()
 {
   #define which packages need to be installed
-  PACKAGES_TO_INSTALL="w3m pv binutils-dev flex git-core build-essential python-dev libreadline5-dev wget zlib1g-dev cmake"
+  PACKAGES_TO_INSTALL="w3m pv binutils-dev flex bison git-core build-essential python-dev libreadline5-dev wget zlib1g-dev cmake"
 
   #for Ubuntu 8.04, a few more packages are needed
   isleftlarger_or_equal 8.10 $version
@@ -656,7 +656,7 @@ function install_ubuntu_packages()
 
   #for building gcc, these are necessary
   if [ "x$BUILD_GCC" == "xYes" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc"
   fi
 
   if [ "$arch" == "x86_64" ]; then
