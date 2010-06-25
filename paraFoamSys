@@ -59,7 +59,7 @@ getPrecision() {
 # get a sensible caseName
 caseName=${PWD##*/}
 
-# parse options
+# parse options -> paraview versions other than 3.8
 if [ "$#" -gt 0 ]; then
    case "$1" in
    -h | -help)
@@ -121,8 +121,23 @@ if [ "$#" -gt 0 ]; then
    esac
 fi
 
+# paraview = 3.8? -> use native OFreader in 3.8
+if [ $Paraview_VERSION == "3.8" ]; then
+    caseFile="$caseName.foam"
+
+    # Clean up on termination and on Ctrl-C
+    trap "rm -f $caseFile 2>/dev/null; exit 0" EXIT TERM INT
+    touch $caseFile
+    paraview --data=$caseFile
+    exit
+fi
+
+# in case of no arguments just convert all data to VTK
 echo "foamToVTK"
 echo "paraview "--data=VTK/$caseName..vtk""
+
+
+## LEGACY CODE
 
 # get a sensible caseName
 #caseName=${PWD##*/}

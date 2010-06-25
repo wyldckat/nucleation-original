@@ -1443,6 +1443,19 @@ function check_installation()
   foamInstallationTest | tee foamIT.log
   echo -e "\n\nThis report has been saved in file $WM_PROJECT_DIR/foamIT.log"
 
+  #check paraview version
+  #PV writes version string to stderr...
+  paraview -V 2> pv.log
+  Paraview_VERSION="$(cat pv.log | awk -F'View' '{print $2}')"
+  rm pv.log
+  #include version variable in .bashrc so we can use this in paraFoamSys
+  if [ $Paraview_VERSION == "" ]; then
+      IFERRORSDETECTED="x"
+      echo -e "Paraview version could not be determined!"
+  else
+      echo "Paraview_VERSION=$Paraview_VERSION" >> $PATHOF/OpenFOAM-1.6.x/etc/bashrc
+  fi
+
   #if issues found then generate "bug report" and request that the user reports it!
   IFERRORSDETECTED=`cat foamIT.log | grep "Critical systems ok"`
   if [ "x$IFERRORSDETECTED" == "x" ]; then
