@@ -609,7 +609,10 @@ function define_packages_to_download()
   
   #patch file for tweaking timing option into wmake
   WMAKEPATCHFILE="patchWmake"
-  
+
+  #file with md5 sums for OpenFOAM 1.6 files
+  OPENFOAMMD5SUMSFILE="OFpackages.md5"
+
   if [ "x$BUILD_QT" == "xYes" ]; then
     QT_VERSION=4.3.5
     QT_BASEURL="ftp://ftp.trolltech.com/qt/source/"
@@ -739,6 +742,7 @@ function create_OpenFOAM_folder()
 
 #this function retrieves the md5sums from www.openfoam.com
 #the retrieved checksums are stored in the file "OFpackages.md5"
+#NOTE: outdated function, but kept just in case as a reference!
 function get_md5sums_for_OFpackages()
 {
   w3m -dump -T text/html http://www.openfoam.com/download/linux32.php | grep gtgz | \
@@ -829,7 +833,8 @@ function download_files()
   cd_openfoam #this is a precautionary measure
 
   #generate md5 sums for "md5sum -check"ing :)
-  get_md5sums_for_OFpackages
+  #No longer needed since OpenFOAM 1.7 was released...
+  ##get_md5sums_for_OFpackages
 
   #Download Third Party files for detected system and selected mirror
   #download Third Party sources
@@ -848,6 +853,7 @@ function download_files()
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$OPENFOAMMD5SUMSFILE"
 
   if [ "x$BUILD_QT" == "xYes" ]; then
     do_wget "$QT_BASEURL" "$QT_PACKAGEFILE"
