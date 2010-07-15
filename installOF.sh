@@ -628,7 +628,10 @@ function define_packages_to_download()
   
   #patch file for tweaking timing option into wmake
   WMAKEPATCHFILE="patchWmake"
-  
+
+  #file with md5 sums for OpenFOAM 1.6 files
+  OPENFOAMMD5SUMSFILE="OFpackages.md5"
+
   if [ "x$BUILD_QT" == "xYes" ]; then
     QT_VERSION=4.3.5
     QT_BASEURL="ftp://ftp.trolltech.com/qt/source/"
@@ -649,7 +652,7 @@ function define_packages_to_download()
 function install_ubuntu_packages()
 {
   #define which packages need to be installed
-  PACKAGES_TO_INSTALL="w3m pv binutils-dev flex git-core build-essential python-dev libreadline5-dev wget zlib1g-dev cmake"
+  PACKAGES_TO_INSTALL="w3m pv binutils-dev flex bison git-core build-essential python-dev libreadline5-dev wget zlib1g-dev cmake"
 
   #for Ubuntu 8.04, a few more packages are needed
   isleftlarger_or_equal 8.10 $version
@@ -657,10 +660,13 @@ function install_ubuntu_packages()
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL curl"
   fi
   
-  #for Ubuntu 10.04, a few more packages are needed
-  isleftlarger_or_equal $version 10.04
+  #for Ubuntu 9.10 and 10.04, a few more packages are needed
+  isleftlarger_or_equal $version 9.10
   if [ x"$?" == x"1" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libpng12-dev libxt-dev libxi-dev libxrender-dev libxrandr-dev libxcursor-dev libxinerama-dev libfreetype6-dev libfontconfig1-dev libglib2.0-dev"
+    if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
+      PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL freeglut3-dev"
+    fi
   fi
 
   #for documentation, these are necessary
@@ -670,7 +676,7 @@ function install_ubuntu_packages()
 
   #for building gcc, these are necessary
   if [ "x$BUILD_GCC" == "xYes" ]; then
-    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc bison"
+    PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL texinfo byacc"
   fi
 
   if [ "$arch" == "x86_64" ]; then
@@ -760,6 +766,7 @@ function create_OpenFOAM_folder()
 
 #this function retrieves the md5sums from www.openfoam.com
 #the retrieved checksums are stored in the file "OFpackages.md5"
+#NOTE: outdated function, but kept just in case as a reference!
 function get_md5sums_for_OFpackages()
 {
   w3m -dump -T text/html http://www.openfoam.com/download/linux32.php | grep gtgz | \
@@ -850,7 +857,8 @@ function download_files()
   cd_openfoam #this is a precautionary measure
 
   #generate md5 sums for "md5sum -check"ing :)
-  get_md5sums_for_OFpackages
+  #No longer needed since OpenFOAM 1.7 was released...
+  ##get_md5sums_for_OFpackages
 
   #Download Third Party files for detected system and selected mirror
   #download Third Party sources
@@ -869,6 +877,7 @@ function download_files()
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
   do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$OPENFOAMMD5SUMSFILE"
 
   if [ "x$BUILD_QT" == "xYes" ]; then
     do_wget "$QT_BASEURL" "$QT_PACKAGEFILE"
@@ -987,6 +996,9 @@ function OpenFOAM_git_clone()
   fi
   ln -s "$PATHOF/ThirdParty-1.6" "$PATHOF/ThirdParty-1.6.x"
   git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
+  OpenFOAM_git_error=$?
+  
+  continue_after_failed_openfoam_git
 }
 
 
@@ -1034,7 +1046,7 @@ function apply_patches_fixes()
       cd ThirdParty-1.6/paraview-3.6.1/platforms/linux64Gcc/bin
     fi
     mv pqClientDocFinder.txt pqClientDocFinder_orig.txt
-    cat pqClientDocFinder_orig.txt | sed 's/\/home\/dm2\/henry\/OpenFOAM/'${PATHOF}'/' > ./pqClientDocFinder.txt
+    cat pqClientDocFinder_orig.txt | sed -e 's=/home/dm2/henry/OpenFOAM='${PATHOF}'=' > ./pqClientDocFinder.txt
   fi
 
   cd_openfoam #this is a precautionary measure
@@ -1427,6 +1439,21 @@ function continue_after_failed_openfoam()
   fi
 }
 
+function continue_after_failed_openfoam_git()
+{
+  if [ "x$OpenFOAM_git_error" != "x0" ]; then
+    echo -e "\n------------------------------------------------------\n"
+    echo "The previous git operation failed, which without it continuing this script may be useless."
+    echo "But do you wish continue nonetheless? (yes or no): "
+    read casestat;
+    case $casestat in
+      no | n | N | No | NO) exit 0;;
+    esac
+    unset casestat
+    echo "------------------------------------------------------"
+  fi
+}
+
 #check if the installation is complete
 function check_installation()
 {
@@ -1558,6 +1585,9 @@ function OpenFOAM_git_pull()
   echo "Let's do a git pull"
   echo "------------------------------------------------------"
   git pull
+  OpenFOAM_git_error=$?
+  
+  continue_after_failed_openfoam_git
 }
 
 #provide the user with a progress bar and timings for building Qt
@@ -1749,6 +1779,16 @@ function build_ParaView_ctrl_c_triggered()
   build_ParaView_progress_dialog
 }
 
+function hookup_Qt_Libs_with_ParaView()
+{
+  if [ "x$BUILD_QT" == "xYes" ]; then
+    for a in ${QT_PLATFORM_PATH}/lib/*.4; do
+      b=`echo $a | sed -e 's/.*\/\(.*\)$/\1/'`
+      ln -s $a ${ParaView_DIR}/bin/$b
+    done
+  fi
+}
+
 function build_ParaView()
 {
   if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
@@ -1825,6 +1865,9 @@ function build_ParaView()
       echo "Build ParaView:"
       if [ -e "$ParaView_DIR/bin/paraview" ]; then
 
+        #this will make links in ParaView's bin folder to the custom build of Qt's libraries
+        hookup_Qt_Libs_with_ParaView
+        
         echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
         echo -e "Building ParaView finished successfully at:\n\t`date`"
         echo "ParaView is ready to use."
@@ -1833,6 +1876,9 @@ function build_ParaView()
              -e "$ParaView_DIR/bin/pvserver" -a -e "$ParaView_DIR/bin/pvrenderserver" -a \
              -e "$ParaView_DIR/bin/pvdataserver" ]; then
 
+        #this will make links in ParaView's bin folder to the custom build of Qt's libraries
+        hookup_Qt_Libs_with_ParaView
+        
         echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
         echo -e "Building ParaView finished successfully at:\n\t`date`"
         echo "ParaView server tools are ready to be used."
@@ -2079,13 +2125,13 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-      --checklist "Choose ParaView settings: < Space to select ! >" 16 52 6 \
+      --checklist "Choose ParaView settings: < Space to select ! >" 16 59 6 \
       1 "Do custom build of QT 4.3.5 ?" off \
       2 "Do custom build of ParaView ?" off \
       3 "Build ParaView with GUI ?" on \
       4 "Build ParaView with Python support ?" off \
       5 "Build ParaView with MPI support ?" off \
-      6 "Build ParaView with OSMesa support ?" off )
+      6 "Build ParaView with OSMesa (without GUI) ?" off )
 
       if [ x"$?" == x"0" ]; then
         break;
@@ -2106,10 +2152,11 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   done
 
   if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
+      BUILD_QT=Yes
       BUILD_PARAVIEW=Yes
       dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
       --title "Non-optional setting detected!" \
-      --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of ParaView and PV3FoamReader" 5 70
+      --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of Qt, ParaView and PV3FoamReader" 5 70
   fi
   if [ "$version" == "8.04" ]; then
     if [ "x$BUILD_PARAVIEW" != "Yes" -o "x$BUILD_QT" != "xYes" ]; then
