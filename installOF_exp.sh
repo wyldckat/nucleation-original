@@ -934,7 +934,7 @@ function unpack_downloaded_files()
     ln -s linux linux64
   fi
 
-  if [ "x$USE_KITWARE_PV" != "xYes" ]; then
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
     cd_openfoam
     echo "Untaring $KV_PV_FILE"
     pv $KV_PV_FILE | tar -xz
