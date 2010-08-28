@@ -1114,7 +1114,7 @@ function add_openfoam_to_bashrc()
 
   #add kitware paraview to path
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then
-     echo "PATH=$PATHOF/OpenFOAM-1.6.x/ThirdParty-1.6/$KV_PV_DIR/bin:$PATH" >> .bashrc
+     echo "export PATH=$PATHOF/OpenFOAM-1.6.x/ThirdParty-1.6/$KV_PV_DIR/bin:$PATH" >> .bashrc
   fi
 }
 
