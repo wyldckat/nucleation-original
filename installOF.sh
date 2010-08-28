@@ -2116,10 +2116,8 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   BUILD_PARAVIEW_WITH_PYTHON=No
   BUILD_PARAVIEW_WITH_OSMESA=No
 
-  #skip Paraview Build options if install from Repo or Kitware was selected
-  if  ; then INSTALLMODE=custom ; fi
-
   #ParaView configurations for a fresh install
+  #skip Paraview Build options if install from Repo or Kitware was selected
   if [ "$INSTALLMODE" == "fresh" -a "$USE_REPO_PV" == "No" -o "$USE_KITWARE_PV" == "No" ]; then
     while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \

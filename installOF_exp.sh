@@ -2237,6 +2237,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   BUILD_PARAVIEW_WITH_OSMESA=No
 
   #ParaView configurations for a fresh install
+  #skip Paraview Build options if install from Repo or Kitware was selected
   if [ "x$CUSTOMOPTS_PARAVIEW" == "xYes" ] && \
      ! [ "$INSTALLMODE" == "fresh" -a "$USE_REPO_PV" == "Yes" -o "$USE_KITWARE_PV" == "Yes" ]; then
   while : ; do
