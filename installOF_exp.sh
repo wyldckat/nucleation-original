@@ -858,6 +858,12 @@ function download_files()
 {
   cd_openfoam #this is a precautionary measure
 
+  #download patch files that didn't fit in this script
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$OPENFOAMMD5SUMSFILE"
+
   #generate md5 sums for "md5sum -check"ing :)
   #No longer needed since OpenFOAM 1.7 was released...
   ##get_md5sums_for_OFpackages
@@ -874,12 +880,6 @@ function download_files()
   if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then
     do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN_CMAKE" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
   fi
-
-  #download patch files that didn't fit in this script
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$OPENFOAMMD5SUMSFILE"
 
   if [ "x$BUILD_QT" == "xYes" ]; then
     do_wget "$QT_BASEURL" "$QT_PACKAGEFILE"
