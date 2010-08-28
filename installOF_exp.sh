@@ -1553,10 +1553,9 @@ function check_installation()
   rm pv.log
   #include version variable in .bashrc so we can use this in paraFoamSys
   if [ $Paraview_VERSION == "" ]; then
-      IFERRORSDETECTED="x"
-      echo -e "Paraview version could not be determined!"
+      echo "Paraview version could not be determined!"
   else
-      echo "Paraview_VERSION=$Paraview_VERSION" >> $PATHOF/OpenFOAM-1.6.x/etc/bashrc
+      echo "export Paraview_VERSION=$Paraview_VERSION" >> $PATHOF/OpenFOAM-1.6.x/etc/bashrc
   fi
 
   #if issues found then generate "bug report" and request that the user reports it!
@@ -2202,14 +2201,14 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     while : ; do
       SETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-      --checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
+      --checklist "Choose Install settings: < Space to select ! >" 15 50 7 \
       1 "Do apt-get upgrade" off \
       2 "Build OpenFOAM docs" off \
       3 "Use startFoam alias" on \
       4 "Use OpenFOAM gcc compiler" on \
       5 "Build ccm26ToFoam" off \
       6 "Install ParaView from repository" off \
-      7 "Download latest ParaView from Kitware" on )
+      7 "Download latest ParaView from Kitware" off )
 
       if [ x"$?" == x"0" ]; then
         break;
@@ -2225,6 +2224,8 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       if [ $setting == 3 ] ; then USE_ALIAS_FOR_BASHRC=Yes ; fi
       if [ $setting == 4 ] ; then USE_OF_GCC=Yes ; fi
       if [ $setting == 5 ] ; then BUILD_CCM26TOFOAM=Yes ; fi
+      if [ $setting == 6 ] ; then USE_REPO_PV=Yes ; fi
+      if [ $setting == 7 ] ; then USE_KITWARE_PV=Yes ; fi
     done
   fi
 
@@ -2235,12 +2236,10 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   BUILD_PARAVIEW_WITH_PYTHON=No
   BUILD_PARAVIEW_WITH_OSMESA=No
 
-  #skip Paraview Build options if install from Repo or Kitware was selected
-  if [ "$USE_REPO_PV" == "Yes" or "$USE_KITWARE_PV" == "Yes"] ; then INSTALLMODE=custom ; fi
-
   #ParaView configurations for a fresh install
-  if [ "x$INSTALLMODE" == "xfresh" -o "x$CUSTOMOPTS_PARAVIEW" == "xYes" ]; then
-    while : ; do
+  if [ "x$CUSTOMOPTS_PARAVIEW" == "xYes" ] && \
+     ! [ "$INSTALLMODE" == "fresh" -a "$USE_REPO_PV" == "Yes" -o "$USE_KITWARE_PV" == "Yes" ]; then
+  while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
       --checklist "Choose ParaView settings: < Space to select ! >" 16 59 6 \
