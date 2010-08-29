@@ -2175,7 +2175,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 
   #ParaView configurations for a fresh install
   #skip Paraview Build options if install from Repo or Kitware was selected
-  if [ "$INSTALLMODE" == "fresh" -a "$USE_REPO_PV" == "No" -a "$USE_KITWARE_PV" == "No" ]; then
+  if [ "x$INSTALLMODE" != "xupdate" -a "$USE_REPO_PV" == "No" -a "$USE_KITWARE_PV" == "No" ]; then
     while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
