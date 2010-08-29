@@ -64,7 +64,6 @@ if [ "$#" -gt 0 ]; then
    case "$1" in
    -h | -help)
       usage
-      exit
       ;;
    -case)
       shift
@@ -122,7 +121,7 @@ if [ "$#" -gt 0 ]; then
 fi
 
 # paraview = 3.8? -> use native OFreader in 3.8
-if [ $Paraview_VERSION == "3.8" ]; then
+if [ "x$Paraview_VERSION" == "x3.8" ]; then
     caseFile="$caseName.foam"
 
     # Clean up on termination and on Ctrl-C
