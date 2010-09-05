@@ -28,7 +28,7 @@
 #
 # Description
 #     This script is part of the OpenFoam installer
-#     It will enable you to view OpenFoam results with the system paraview
+#     It will enable you to view OpenFoam results with the system $PV_EXE
 #
 #------------------------------------------------------------------------------
 Script=${0##*/}
@@ -39,17 +39,13 @@ usage() {
 
 usage: $Script [-case dir] [-time time] [-latestTime] [-data vtkFile] [-clean]
 
-* start paraview $ParaView_VERSION with the OpenFOAM libraries
+* start $PV_EXE $ParaView_VERSION with the OpenFOAM libraries
 * default action will be to load an entire dataset
 * clean option will remove VTK directory!
 * script will only accept one option at a time
 
 USAGE
    exit 1
-}
-
-getDeltaT() {
-   DELTAT="$(cat system/controlDict | grep 'writeInterval' | awk '{print $2}')"
 }
 
 getPrecision() {
@@ -59,12 +55,11 @@ getPrecision() {
 # get a sensible caseName
 caseName=${PWD##*/}
 
-# parse options -> paraview versions other than 3.8
+# parse options -> $PV_EXE versions other than 3.8
 if [ "$#" -gt 0 ]; then
    case "$1" in
    -h | -help)
       usage
-      exit
       ;;
    -case)
       shift
@@ -72,7 +67,9 @@ if [ "$#" -gt 0 ]; then
       [ "$#" -ge 1 ] || usage "'-case' option requires an argument"
       cd "$caseDir" 2>/dev/null || usage "directory does not exist:  '$caseDir'"
       echo "foamToVTK"
-      echo "paraview "--data=VTK/$caseDir..vtk""
+      foamToVTK
+      echo "$PV_EXE "--data=VTK/$caseDir..vtk""
+      $PV_EXE --data=VTK/$caseDir..vtk
       exit
       ;;
    -time)
@@ -80,13 +77,15 @@ if [ "$#" -gt 0 ]; then
       shift
       caseTime=$1
       [ "$#" -ge 1 ] || usage "'-time' option requires an argument"
-      #foamToVTK -time $1
-      getDeltaT
-      echo "writeInterval: $DELTAT"
-      echo "caseTime: $caseTime"
-      FILENO="$(echo "scale=4; $caseTime/$DELTAT" | bc | awk -F. '{print $1}')" # | bc)"
-      echo "${caseName}_${FILENO}.vtk"
-      #paraview --data=VTK/caseName_$FILENO.vtk
+      echo "foamToVTK -time $1"
+      foamToVTK -time $1 > f2vtk.log
+      caseTime="$(grep "time =" f2vtk.log | awk -F'= ' '{print $2}')"
+      caseData="$(grep "Internal" f2vtk.log | awk -F'VTK/' '{print $2}' | tr -d '\"')"
+      rm f2vtk.log
+      echo "time: ${caseTime}, data: ${caseData}"
+      cd VTK/
+      echo "paraview --data=$caseData"
+      $PV_EXE --data=$caseData
       exit
       ;;
    -latestTime)
@@ -99,15 +98,15 @@ if [ "$#" -gt 0 ]; then
       #rm f2vtk.log
       echo "time: ${caseTime}, data: ${caseData}"
       cd VTK/
-      echo "$(pwd)"
-      paraview --data=$caseData
+      echo "paraview --data=$caseData"
+      $PV_EXE --data=$caseData
       exit
       ;;
    -data)
       shift
       caseData=$1
       [ "$#" -ge 1 ] || usage "'-data' option requires an argument"
-      #paraview --data=$1
+      $PV_EXE --data=$1
       exit
       ;;
    -clean)
@@ -121,44 +120,20 @@ if [ "$#" -gt 0 ]; then
    esac
 fi
 
-# paraview = 3.8? -> use native OFreader in 3.8
-if [ $Paraview_VERSION == "3.8" ]; then
+# $PV_EXE = 3.8? -> use native OFreader in 3.8
+if [ "x$Paraview_VERSION" == "x3.8" ]; then
     caseFile="$caseName.foam"
 
     # Clean up on termination and on Ctrl-C
     trap "rm -f $caseFile 2>/dev/null; exit 0" EXIT TERM INT
     touch $caseFile
-    paraview --data=$caseFile
+    $PV_EXE --data=$caseFile
     exit
 fi
 
 # in case of no arguments just convert all data to VTK
 echo "foamToVTK"
-echo "paraview "--data=VTK/$caseName..vtk""
+foamToVTK
+echo "$PV_EXE "--data=VTK/$caseName..vtk""
+$PV_EXE "--data=VTK/$caseName..vtk"
 
-
-## LEGACY CODE
-
-# get a sensible caseName
-#caseName=${PWD##*/}
-
-# parent directory for normal or parallel results
-#case "$caseName" in
-#   processor*) parentDir=".." ;;
-#   *)          parentDir="."  ;;
-#esac
-
-# check existence of essential files
-#for check in system/controlDict
-#do
-#   [ -s "$parentDir/$check" ] || usage "file does not exist:  '$parentDir/$check'"
-#done
-
-#caseFile="$caseName.OpenFOAM"
-
-   # Clean up on termination and on Ctrl-C
-#   trap "rm -f $caseFile 2>/dev/null; exit 0" EXIT TERM INT
-#   touch $caseFile
-#   paraview --data=$caseFile
-
-#------------------------------------------------------------------------------

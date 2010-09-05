@@ -508,6 +508,76 @@ cd $tmpVar
 unset tmpVar
 }
 
+#Patch paraFoamSys
+function patchParaFoamSys()
+{
+  tmpVar=$PWD
+  cd_openfoam
+  cd OpenFOAM-1.6.x/bin/
+
+  #add system paraview to path
+  if [ "x$USE_REPO_PV" == "xYes" ]; then
+echo '--- orig/'$PFOAM_PATCHFILE'	2010-09-05 20:31:18.808716075 +0200
++++ ./'$PFOAM_PATCHFILE'	2010-09-05 20:31:08.279513400 +0200
+@@ -52,6 +52,10 @@
+    PRECISION="$(cat system/controlDict | grep 'timePrecision' | awk '{print $2}')"
+ }
+ 
++#injected here by the installer
++export Paraview_VERSION=
++PV_EXE=/usr/bin/paraview
++
+ # get a sensible caseName
+ caseName=${PWD##*/}
+' | patch -p0
+  fi
+
+  #add kitware paraview to path
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then     
+echo '--- paraFoamSys	2010-09-05 20:31:18.808716075 +0200
++++ paraFoamSys2	2010-09-05 20:31:08.279513400 +0200
+@@ -52,6 +52,10 @@
+    PRECISION="$(cat system/controlDict | grep 'timePrecision' | awk '{print $2}')"
+ }
+ 
++#injected here by the installer
++export Paraview_VERSION=
++PV_EXE='$PATHOF'/ThirdParty-1.6/'$KV_PV_DIR'/bin/paraview
++
+ # get a sensible caseName
+ caseName=${PWD##*/}
+' | patch -p0
+  fi
+
+  #check paraview version
+  #PV writes version string to stderr...
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
+    cd $PATHOF/ThirdParty-1.6/$KV_PV_DIR/bin
+    ./paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
+    cd_openfoam
+    cd OpenFOAM-1.6.x/bin/
+  elif [ "x$USE_KITWARE_PV" == "xYes" ]; then
+    /usr/bin/paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
+    cd_openfoam
+    cd OpenFOAM-1.6.x/bin/
+  else
+    paraview -V 2> pv.log
+  fi
+
+  Paraview_VERSION="$(cat pv.log | awk -F'View' '{print $2}')"
+  rm pv.log
+  #include version variable in .bashrc so we can use this in paraFoamSys
+  if [ "x$Paraview_VERSION" == "x" ]; then
+      echo "Paraview version could not be determined!"
+  else
+      cat './'$PFOAM_PATCHFILE | sed 's/export Paraview_VERSION=/export Paraview_VERSION=$Paraview_VERSION/' > sed.out
+      mv 'sed.out' $PFOAM_PATCHFILE
+  fi
+
+  cd $tmpVar
+  unset tmpVar
+}
+
 #-- END PATCHING FUNCTIONS -------------------------------------------------
 
 #-- MAIN FUNCTIONS ---------------------------------------------------------
@@ -601,22 +671,24 @@ function define_packages_to_download()
     exit 1
   fi
 
-  #Kitware paraview files to download if USE_KITWARE_PV is selected
-  KV_PV_BASEURL="http://www.paraview.org/files/v3.8/"
-  if [ "$arch" == "x86_64" ]; then
-     #need dir for untaring
-     KV_PV_FILE="ParaView-3.8.0-Linux-x86_64.tar.gz"
-     KV_PV_DIR="ParaView-3.8.0-Linux-x86_64"
-  elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-     KV_PV_FILE="ParaView-3.8.0-Linux-i686.tar.gz"
-     KV_PV_DIR="ParaView-3.8.0-Linux-i686"
-  else
-    echo "Sorry, architecture not recognized, aborting."
-    exit 1
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
+    #Kitware paraview files to download if USE_KITWARE_PV is selected
+    KV_PV_BASEURL="http://www.paraview.org/files/v3.8/"
+    if [ "$arch" == "x86_64" ]; then
+      #need dir for untaring
+      KV_PV_FILE="ParaView-3.8.0-Linux-x86_64.tar.gz"
+      KV_PV_DIR="ParaView-3.8.0-Linux-x86_64"
+    elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
+      KV_PV_FILE="ParaView-3.8.0-Linux-i686.tar.gz"
+      KV_PV_DIR="ParaView-3.8.0-Linux-i686"
+    else
+      echo "Sorry, architecture not recognized, aborting."
+      exit 1
+    fi
   fi
 
   #Repository paraview -> upgraded paraFoam script
-  if [ "x$USE_REPO_PV" == "xYes" ]; then
+  if [ "x$USE_REPO_PV" == "xYes" -o "x$USE_KITWARE_PV" == "xYes" ]; then
     PFOAM_PATCHFILE="paraFoamSys"
   fi
   
@@ -856,6 +928,12 @@ function download_files()
 {
   cd_openfoam #this is a precautionary measure
 
+  #download patch files that didn't fit in this script
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
+  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$OPENFOAMMD5SUMSFILE"
+
   #generate md5 sums for "md5sum -check"ing :)
   #No longer needed since OpenFOAM 1.7 was released...
   ##get_md5sums_for_OFpackages
@@ -873,12 +951,6 @@ function download_files()
     do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN_CMAKE" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
   fi
 
-  #download patch files that didn't fit in this script
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$MPFRPATCHFILE"
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$GCCMODED_MAKESCRIPT"
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$WMAKEPATCHFILE"
-  do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$OPENFOAMMD5SUMSFILE"
-
   if [ "x$BUILD_QT" == "xYes" ]; then
     do_wget "$QT_BASEURL" "$QT_PACKAGEFILE"
   fi
@@ -889,12 +961,12 @@ function download_files()
     do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_OPTIONS"
   fi
  
-  if [ "$USE_KITWARE_PV" == "xYes" ]; then
-    #get paraview 3.8.1 from kitware, which has native openfoam reader
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
+    #get paraview 3.8 from kitware, which has native openfoam reader
     do_wget "$KV_PV_BASEURL" "$KV_PV_FILE"
   fi
 
-  if [ "$USE_REPO_PV" == "xYes" ]; then
+  if [ "x$USE_REPO_PV" == "xYes" -o "x$USE_KITWARE_PV" == "xYes" ]; then
     #get our patched version of paraFoam -> paraFoamSys
     do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$PFOAM_PATCHFILE"
   fi
@@ -928,7 +1000,7 @@ function unpack_downloaded_files()
     ln -s linux linux64
   fi
 
-  if [ "x$USE_KITWARE_PV" != "xYes" ]; then
+  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
     cd_openfoam
     echo "Untaring $KV_PV_FILE"
     pv $KV_PV_FILE | tar -xz
@@ -964,6 +1036,7 @@ function unpack_downloaded_files()
     cp ../$GCCMODED_MAKESCRIPT .
     chmod +x $GCCMODED_MAKESCRIPT
   fi
+
   echo "------------------------------------------------------"
 }
 
@@ -1082,6 +1155,16 @@ function apply_patches_fixes()
   patchMakeQtScript
   patchMakeParaViewScript
   patchAllwmakeLibccmioScript
+  
+  if [ "x$USE_REPO_PV" == "xYes" -o "x$USE_KITWARE_PV" == "xYes" ]; then
+    #First move paraFoamSys to OpenFOAM's bin folder
+    cd_openfoam
+    mv $PFOAM_PATCHFILE OpenFOAM-1.6.x/bin/
+    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
+
+    #Now patch it up
+    patchParaFoamSys
+  fi
 }
 
 #Activate OpenFOAM environment
@@ -1110,11 +1193,6 @@ function add_openfoam_to_bashrc()
     echo -e "alias startFoam=\". $PATHOF/OpenFOAM-1.6.x/etc/bashrc\"" >> ~/.bashrc
   else
     echo ". $PATHOF/OpenFOAM-1.6.x/etc/bashrc" >> ~/.bashrc
-  fi
-
-  #add kitware paraview to path
-  if [ "x$USE_KITWARE_PV" == "xYes" ]; then
-     echo "PATH=$PATHOF/OpenFOAM-1.6.x/ThirdParty-1.6/$KV_PV_DIR/bin:$PATH" >> .bashrc
   fi
 }
 
@@ -1469,19 +1547,6 @@ function check_installation()
   echo "------------------------------------------------------"
   foamInstallationTest | tee foamIT.log
   echo -e "\n\nThis report has been saved in file $WM_PROJECT_DIR/foamIT.log"
-
-  #check paraview version
-  #PV writes version string to stderr...
-  paraview -V 2> pv.log
-  Paraview_VERSION="$(cat pv.log | awk -F'View' '{print $2}')"
-  rm pv.log
-  #include version variable in .bashrc so we can use this in paraFoamSys
-  if [ $Paraview_VERSION == "" ]; then
-      IFERRORSDETECTED="x"
-      echo -e "Paraview version could not be determined!"
-  else
-      echo "Paraview_VERSION=$Paraview_VERSION" >> $PATHOF/OpenFOAM-1.6.x/etc/bashrc
-  fi
 
   #if issues found then generate "bug report" and request that the user reports it!
   IFERRORSDETECTED=`cat foamIT.log | grep "Critical systems ok"`
@@ -2080,14 +2145,14 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   while : ; do
     SETTINGSOPTS=$(dialog --stdout --separate-output \
     --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-    --checklist "Choose Install settings: < Space to select ! >" 15 50 5 \
+    --checklist "Choose Install settings: < Space to select ! >" 15 50 7 \
     1 "Do apt-get upgrade" off \
     2 "Build OpenFOAM docs" off \
     3 "Use startFoam alias" on \
     4 "Use OpenFOAM gcc compiler" on \
     5 "Build ccm26ToFoam" off \
-    6 "Install ParaView from repository" off \
-    7 "Download latest ParaView from Kitware" on )
+    6 "Install ParaView from Ubuntu's repository" off \
+    7 "Download latest ParaView from Kitware" off )
 
     if [ x"$?" == x"0" ]; then
       break;
@@ -2117,11 +2182,9 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   BUILD_PARAVIEW_WITH_PYTHON=No
   BUILD_PARAVIEW_WITH_OSMESA=No
 
-  #skip Paraview Build options if install from Repo or Kitware was selected
-  if [ "$USE_REPO_PV" == "Yes" or "$USE_KITWARE_PV" == "Yes"] ; then INSTALLMODE=custom ; fi
-
   #ParaView configurations for a fresh install
-  if [ "$INSTALLMODE" == "fresh" ]; then
+  #skip Paraview Build options if install from Repo or Kitware was selected
+  if [ "x$INSTALLMODE" != "xupdate" -a "$USE_REPO_PV" == "No" -a "$USE_KITWARE_PV" == "No" ]; then
     while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
       --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
@@ -2139,60 +2202,60 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
         cancel_installer
       fi
     done
-  fi
 
-  #Take care of unpack settings from PVSETTINGSOPTS
-  for setting in $PVSETTINGSOPTS ; do
-    if [ $setting == 1 ] ; then BUILD_QT=Yes ; fi
-    if [ $setting == 2 ] ; then BUILD_PARAVIEW=Yes ; fi
-    if [ $setting == 3 ] ; then BUILD_PARAVIEW_WITH_GUI=Yes ; fi
-    if [ $setting == 4 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
-    if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_MPI=Yes ; fi
-    if [ $setting == 6 ] ; then BUILD_PARAVIEW_WITH_OSMESA=Yes ; fi
-  done
+    #Take care of unpack settings from PVSETTINGSOPTS
+    for setting in $PVSETTINGSOPTS ; do
+      if [ $setting == 1 ] ; then BUILD_QT=Yes ; fi
+      if [ $setting == 2 ] ; then BUILD_PARAVIEW=Yes ; fi
+      if [ $setting == 3 ] ; then BUILD_PARAVIEW_WITH_GUI=Yes ; fi
+      if [ $setting == 4 ] ; then BUILD_PARAVIEW_WITH_PYTHON=Yes ; fi
+      if [ $setting == 5 ] ; then BUILD_PARAVIEW_WITH_MPI=Yes ; fi
+      if [ $setting == 6 ] ; then BUILD_PARAVIEW_WITH_OSMESA=Yes ; fi
+    done
 
-  if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
-      BUILD_QT=Yes
-      BUILD_PARAVIEW=Yes
-      dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-      --title "Non-optional setting detected!" \
-      --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of Qt, ParaView and PV3FoamReader" 5 70
-  fi
-  if [ "$version" == "8.04" ]; then
-    if [ "x$BUILD_PARAVIEW" != "Yes" -o "x$BUILD_QT" != "xYes" ]; then
-      BUILD_QT=Yes
-      BUILD_PARAVIEW=Yes
-      dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-      --title "Non-optional setting detected!" \
-      --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom build of Qt and also build ParaView." 5 70
-    fi
-  fi
-  if [ "x$INSTALLMODE" == "xserver" ]; then
-      BUILD_PARAVIEW=Yes
-      BUILD_PARAVIEW_WITH_GUI=No
-      BUILD_PARAVIEW_WITH_MPI=Yes
-      dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-      --title "Server Install settings" \
-      --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70  
-  fi
-
-  #verifying ParaView Build options, just in case
-  if [ "x$BUILD_PARAVIEW" == "xNo" ]; then
-    if [ "x$BUILD_PARAVIEW_WITH_MPI" == "xYes" -o "x$BUILD_PARAVIEW_WITH_PYTHON" == "xYes" -o \
-        "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" -o "x$BUILD_QT" == "xYes" ]; then
+    if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
+        BUILD_QT=Yes
         BUILD_PARAVIEW=Yes
         dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
         --title "Non-optional setting detected!" \
-        --infobox "\nParaView will need to be built, since the pre-built version isn't enough for the chosen options." 10 70
+        --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of Qt, ParaView and PV3FoamReader" 5 70
     fi
-  fi
+    if [ "$version" == "8.04" ]; then
+      if [ "x$BUILD_PARAVIEW" != "Yes" -o "x$BUILD_QT" != "xYes" ]; then
+        BUILD_QT=Yes
+        BUILD_PARAVIEW=Yes
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        --title "Non-optional setting detected!" \
+        --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom build of Qt and also build ParaView." 5 70
+      fi
+    fi
+    if [ "x$INSTALLMODE" == "xserver" ]; then
+        BUILD_PARAVIEW=Yes
+        BUILD_PARAVIEW_WITH_GUI=No
+        BUILD_PARAVIEW_WITH_MPI=Yes
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        --title "Server Install settings" \
+        --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70  
+    fi
 
-  if [ "x$BUILD_PARAVIEW" == "xYes" -a "x$BUILD_PARAVIEW_WITH_MPI" == "xNo" -a \
-       "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" ]; then
-      BUILD_PARAVIEW_WITH_MPI=Yes
-      dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
-      --title "Bad options detected!" \
-      --infobox "\nParaView must be built with either MPI or GUI. Since you've defined both Off, will assume server mode and turn on MPI." 10 70
+    #verifying ParaView Build options, just in case
+    if [ "x$BUILD_PARAVIEW" == "xNo" ]; then
+      if [ "x$BUILD_PARAVIEW_WITH_MPI" == "xYes" -o "x$BUILD_PARAVIEW_WITH_PYTHON" == "xYes" -o \
+          "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" -o "x$BUILD_QT" == "xYes" ]; then
+          BUILD_PARAVIEW=Yes
+          dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+          --title "Non-optional setting detected!" \
+          --infobox "\nParaView will need to be built, since the pre-built version isn't enough for the chosen options." 10 70
+      fi
+    fi
+
+    if [ "x$BUILD_PARAVIEW" == "xYes" -a "x$BUILD_PARAVIEW_WITH_MPI" == "xNo" -a \
+        "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" ]; then
+        BUILD_PARAVIEW_WITH_MPI=Yes
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        --title "Bad options detected!" \
+        --infobox "\nParaView must be built with either MPI or GUI. Since you've defined both Off, will assume server mode and turn on MPI." 10 70
+    fi
   fi
 
   #GCC compiling settings
