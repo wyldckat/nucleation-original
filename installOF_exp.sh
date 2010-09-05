@@ -16,7 +16,7 @@
 
 #Code ---------------------------------------------------------
 
-#block attempts to run this script as superuser. If the user wants to install in a system folder, 
+#block attempts to run this script as superuser. If the user wants to install in a system folder,
 #let him/her set proper permissions to that folder first!
 if [ $(/usr/bin/id -u) -eq 0 ]; then
     echo -e "Please do not run this script with superuser/root powers!!\n"
@@ -216,8 +216,8 @@ echo '--- ../bashrc 2010-05-02 13:08:09.905803554 +0200
  export WM_PROJECT_DIR=$WM_PROJECT_INST_DIR/$WM_PROJECT-$WM_PROJECT_VERSION
 -export WM_PROJECT_USER_DIR=$HOME/$WM_PROJECT/$USER-$WM_PROJECT_VERSION
 +export WM_PROJECT_USER_DIR=$FOAM_INST_DIR/$USER-$WM_PROJECT_VERSION
- 
- 
+
+
  # Location of third-party software' | patch -p0
 
 cd $tmpVar
@@ -235,8 +235,8 @@ echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
 +++ bashrc  2009-11-21 00:01:20.814519578 +0000
 @@ -105,6 +105,20 @@
  : ${WM_MPLIB:=OPENMPI}; export WM_MPLIB
- 
- 
+
+
 +#
 +# Set the number of cores to build on
 +#
@@ -274,7 +274,7 @@ echo '--- ../../bashrc  2009-11-21 00:00:47.502453988 +0000
  # WM_ARCH_OPTION = 32 | 64
 -: ${WM_ARCH_OPTION:=64}; export WM_ARCH_OPTION
 +: ${WM_ARCH_OPTION:=32}; export WM_ARCH_OPTION
- 
+
  # WM_PRECISION_OPTION = DP | SP
  : ${WM_PRECISION_OPTION:=DP}; export WM_PRECISION_OPTION' | patch -p0
 
@@ -297,7 +297,7 @@ echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
  # compilerInstall = OpenFOAM | System
 -compilerInstall=OpenFOAM
 +compilerInstall=System
- 
+
  case "${compilerInstall:-OpenFOAM}" in
  OpenFOAM)
 @@ -129,6 +132,8 @@
@@ -307,7 +307,7 @@ echo '--- ../../settings.sh 2009-11-21 00:01:29.851902621 +0000
 +System)
 +    export WM_COMPILER_DIR=/usr
  esac
- 
+
  if [ -d "$compilerBin" ]' | patch -p0
 
 cd $tmpVar
@@ -326,7 +326,7 @@ echo '--- ../../paraFoam  2010-04-11 01:38:34.000000000 +0100
 @@ -75,6 +75,8 @@
      esac
  done
- 
+
 +export LC_ALL=C
 +
  # get a sensible caseName
@@ -351,14 +351,14 @@ echo '--- ../AllwmakeLibccmio  2009-07-24 13:51:14.000000000 +0100
 +++ AllwmakeLibccmio 2009-10-17 11:29:36.000000000 +0100
 @@ -33,6 +33,7 @@
  set -x
- 
+
  packageDir=libccmio-2.6.1
 +origDir=$PWD
- 
+
  if [ ! -d ${packageDir} ]
  then
 @@ -52,7 +53,17 @@
- 
+
  if [ -d ${packageDir} -a ! -d ${packageDir}/Make ]
  then
 -   cp -r wmakeFiles/libccmio/Make ${packageDir}/Make
@@ -374,7 +374,7 @@ echo '--- ../AllwmakeLibccmio  2009-07-24 13:51:14.000000000 +0100
 +    cp -r wmakeFiles/libccmio/Make ${packageDir}/Make
 +  fi
  fi
- 
+
  if [ -d ${packageDir}/Make ]' | patch -p0
 cd $tmpVar
 unset tmpVar
@@ -401,7 +401,7 @@ function patchMakeParaViewScript()
 tmpVar=$PWD
 cd_openfoam
 cd ThirdParty-1.6/
-  
+
 echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
 +++ ./makeParaView  2010-04-18 21:50:31.609831213 +0100
 @@ -45,13 +45,13 @@
@@ -411,13 +411,13 @@ echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
 -PYTHON_LIBRARY=""
 +PYTHON_LIBRARY="/usr/lib/libpython2.6.so"
  # PYTHON_LIBRARY="/usr/lib64/libpython2.6.so.1.0"
- 
+
  # MESA graphics support:
  withMESA=false
  MESA_INCLUDE="/usr/include/GL"
 -MESA_LIBRARY="/usr/lib64/libOSMesa.so"
 +MESA_LIBRARY="/usr/lib/libOSMesa.so"
- 
+
  # extra QT gui support (useful for re-using the installation for engrid)
  withQTSUPPORT=true
 @@ -75,6 +75,7 @@
@@ -433,7 +433,7 @@ echo '--- ../makeParaView  2010-04-18 21:49:00.611392700 +0100
  case "$Script" in *-mesa*)   withMESA=true;; esac
  case "$Script" in *-qt*)     withQTSUPPORT=true;; esac
 +case "$Script" in *-noqt*)     withQTSUPPORT=false;; esac
- 
+
  #
  # various building stages
 @@ -181,6 +183,10 @@
@@ -480,7 +480,7 @@ function patchMakeQtScript()
 tmpVar=$PWD
 cd_openfoam
 cd ThirdParty-1.6/
-  
+
 echo '--- ../makeQt 2010-04-26 23:10:03.000000000 +0100
 +++ makeQt  2010-04-26 23:11:10.000000000 +0100
 @@ -45,7 +45,7 @@
@@ -489,7 +489,7 @@ echo '--- ../makeQt 2010-04-26 23:10:03.000000000 +0100
          -nomake demos \
 -        -nomake examples
 +        -nomake examples $1
- 
+
      if [ -r /proc/cpuinfo ]
      then' | patch -p0
 
@@ -524,7 +524,7 @@ echo '--- orig/'$PFOAM_PATCHFILE'  2010-08-28 11:35:05.000000000 +0100
 @@ -33,6 +33,8 @@
  #------------------------------------------------------------------------------
  Script=${0##*/}
- 
+
 +export PATH='$PATHOF'/ThirdParty-1.6/'$KV_PV_DIR'/bin:$PATH
 +
  usage() {
@@ -556,13 +556,13 @@ echo '--- orig/'$PFOAM_PATCHFILE'  2010-08-28 11:35:05.000000000 +0100
 @@ -56,6 +58,9 @@
     PRECISION="$(cat system/controlDict | grep '"'"'timePrecision'"'"' | awk '"'"'{print $2}'"'"')"
  }
- 
+
 +#injected here by the installer
 +export Paraview_VERSION='$Paraview_VERSION'
 +
  # get a sensible caseName
  caseName=${PWD##*/}
- 
+
 ' | patch -p0
 
   fi
@@ -575,7 +575,7 @@ echo '--- orig/'$PFOAM_PATCHFILE'  2010-08-28 11:35:05.000000000 +0100
 #-- MAIN FUNCTIONS ---------------------------------------------------------
 
 #setup sudo policy for this script
-#REASON: not always does the user have superuser powers, or maybe the user doesn't fully trust us. 
+#REASON: not always does the user have superuser powers, or maybe the user doesn't fully trust us.
 #Either way, using sudo whithin the script could be a security hazard waiting to happen :(
 function ask_for_sudo_policy()
 {
@@ -639,16 +639,16 @@ function define_packages_to_download()
 {
   #This script's repository
   OPENFOAM_UBUNTU_SCRIPT_REPO="http://openfoam-ubuntu.googlecode.com/hg/"
-  
+
   #OpenFOAM's sourceforge repository
   OPENFOAM_SOURCEFORGE="http://downloads.sourceforge.net/foam/"
   SOURCEFORGE_URL_OPTIONS="?use_mirror=$mirror"
-  
+
   #Third Party files to download
   THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
   if [ "$arch" == "x86_64" ]; then
     THIRDPARTY_BIN="ThirdParty-1.6.linux64Gcc.gtgz"
-    
+
     isleftlarger_or_equal 8.04 $version
     leq804=$?
     isleftlarger_or_equal $version 10.04
@@ -683,13 +683,13 @@ function define_packages_to_download()
   if [ "x$USE_REPO_PV" == "xYes" -o "x$USE_KITWARE_PV" == "xYes" ]; then
     PFOAM_PATCHFILE="paraFoamSys"
   fi
-  
+
   #patch file for MPFR for gcc 4.3.3 to build properly
   MPFRPATCHFILE="patchMPFR"
-  
+
   #modified makeGcc for building gcc that comes with OpenFOAM
   GCCMODED_MAKESCRIPT="makeGcc433"
-  
+
   #patch file for tweaking timing option into wmake
   WMAKEPATCHFILE="patchWmake"
 
@@ -701,7 +701,7 @@ function define_packages_to_download()
     QT_BASEURL="ftp://ftp.trolltech.com/qt/source/"
     QT_PACKAGEFILE="qt-x11-opensource-src-$QT_VERSION.tar.bz2"
   fi
-  
+
   if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
     CCMIO_PACKAGE_VERSION=libccmio-2.6.1
     CCMIO_PACKAGE="${CCMIO_PACKAGE_VERSION}.tar.gz"
@@ -723,7 +723,7 @@ function install_ubuntu_packages()
   if [ x"$?" == x"1" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL curl"
   fi
-  
+
   #for Ubuntu 9.10 and 10.04, a few more packages are needed
   isleftlarger_or_equal $version 9.10
   if [ x"$?" == x"1" ]; then
@@ -753,7 +753,7 @@ function install_ubuntu_packages()
   if [ "x$BUILD_QT" != "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libqt4-dev qt4-dev-tools"
   fi
-  
+
   #install OSMesa when chosen for ParaView
   if [ "x$BUILD_PARAVIEW_WITH_OSMESA" == "xYes" ]; then
     PACKAGES_TO_INSTALL="$PACKAGES_TO_INSTALL libosmesa6 libosmesa6-dev"
@@ -766,7 +766,7 @@ function install_ubuntu_packages()
 
   #now remove the ones that are already installed
   prune_packages_to_install
-  
+
   #only show commands for installation if any packages are missing!
   if [ "x$PACKAGES_TO_INSTALL" != "x" ]; then
 
@@ -779,12 +779,12 @@ function install_ubuntu_packages()
         echo 'The command "sudo apt-get upgrade -y" is now going to be executed.'
         sudo apt-get upgrade -y
       fi
-      
+
       echo 'The command:'
       echo "    sudo apt-get install -y -q=1 $PACKAGES_TO_INSTALL"
       echo 'is now going to be executed.'
       sudo apt-get install -y -q=1 $PACKAGES_TO_INSTALL
-      
+
     else
 
       echo 'Please run the following commands in another terminal or ask your system''s administrator to run them:'
@@ -802,7 +802,7 @@ function install_ubuntu_packages()
     fi
 
   fi
-  
+
   #now remove the ones that are already installed again, to confirm that all have been installed!
   prune_packages_to_install
   if [ "x$PACKAGES_TO_INSTALL" != "x" ]; then
@@ -817,7 +817,7 @@ function install_ubuntu_packages()
         exit 1
         ;;
     esac
-  fi  
+  fi
 }
 
 #Create OpenFOAM folder at $PATHOF
@@ -849,7 +849,7 @@ function get_md5sums_for_OFpackages()
 # the 4th argument is additional arguments to be given to wget before the URL
 function do_wget()
 {
-  #either get the whole file, or try completing it, in case the user 
+  #either get the whole file, or try completing it, in case the user
   #used previously Ctrl+C
   wget_string="$1$2"
   if [ "x$3" != "x" -a "x$3" != "x " ]; then
@@ -889,7 +889,7 @@ function do_md5sum()
   set -e
 }
 
-#this function will do wget and md5sum, and provide the possibility of 
+#this function will do wget and md5sum, and provide the possibility of
 #retrying to retrieve the same file in case of failure!
 #arguments: first 3 are for wget, the last one is the file with the md5sum list
 function do_wget_md5sum()
@@ -938,7 +938,7 @@ function download_files()
   if [ "x$THIRDPARTY_BIN" != "x" ]; then
     do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
   fi
-  
+
   if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then
     do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_BIN_CMAKE" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
   fi
@@ -952,7 +952,7 @@ function download_files()
     do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_FILES"
     do_wget "$OPENFOAM_UBUNTU_SCRIPT_REPO" "$CCMIO_MAKEFILES_OPTIONS"
   fi
- 
+
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then
     #get paraview 3.8 from kitware, which has native openfoam reader
     do_wget "$KV_PV_BASEURL" "$KV_PV_FILE"
@@ -971,23 +971,23 @@ function unpack_downloaded_files()
 
   echo "------------------------------------------------------"
   echo "Untar files -- This can take time"
-  if [ "x$INSTALLMODE" != "xcustom" ]; then 
+  if [ "x$INSTALLMODE" != "xcustom" ]; then
     echo "Untaring $THIRDPARTY_GENERAL"
     #TODO: option "-n" in "pv" will allow the usage of "dialog --gauge" :)
     pv $THIRDPARTY_GENERAL | tar -xz
   fi
 
   #check if $THIRDPARTY_BIN is provided, because one could want to build from sources
-  #TODO: in custom mode, it doesn't unpack because the only situation where it could be necessary is if 
+  #TODO: in custom mode, it doesn't unpack because the only situation where it could be necessary is if
   #      the pre-built ParaView is required back again... and such option doesn't explicitly exist.
-  if [ "x$THIRDPARTY_BIN" != "x" -a "x$INSTALLMODE" != "xcustom" ]; then 
+  if [ "x$THIRDPARTY_BIN" != "x" -a "x$INSTALLMODE" != "xcustom" ]; then
     cd_openfoam
     echo "Untaring $THIRDPARTY_BIN"
     pv $THIRDPARTY_BIN | tar -xz
   fi
-  
+
   #needed for Ubuntu 8.04 and 10.04 x86_64
-  if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then 
+  if [ "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then
     cd_openfoam
     echo "Untaring $THIRDPARTY_BIN_CMAKE"
     pv $THIRDPARTY_BIN_CMAKE | tar -xz ThirdParty-1.6/cmake-2.6.4
@@ -1003,12 +1003,12 @@ function unpack_downloaded_files()
     #put ParaView in 3rd Party directory
     mv "$KV_PV_DIR" "ThirdParty-1.6/$KV_PV_DIR"
   fi
-  
+
   if [ "x$BUILD_QT" == "xYes" ]; then
     cd_openfoam
     cd ThirdParty-1.6
     echo "Untaring $QT_PACKAGEFILE"
-    pv ../$QT_PACKAGEFILE | tar xj 
+    pv ../$QT_PACKAGEFILE | tar xj
   fi
 
   if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
@@ -1032,7 +1032,7 @@ function unpack_downloaded_files()
     cp ../$GCCMODED_MAKESCRIPT .
     chmod +x $GCCMODED_MAKESCRIPT
   fi
-  
+
   echo "------------------------------------------------------"
 }
 
@@ -1045,9 +1045,9 @@ function process_online_log_of_timings()
   #TODO: this value is hard coded for now, since it should come from the output of our timmings script
   #The total count of "make[.]" found in our build_gcc.log
   BUILD_GCC_LAST_BUILD_COUNT=556
-  
+
   #NOTES: ParaView has its own percentage, so we just lift from it
-  #NOTES: OpenFOAM uses wmake, making it relatively easier to estimate automatically, 
+  #NOTES: OpenFOAM uses wmake, making it relatively easier to estimate automatically,
   #thus automatically adapting to new additions in the git repository
 }
 
@@ -1066,7 +1066,7 @@ function OpenFOAM_git_clone()
   ln -s "$PATHOF/ThirdParty-1.6" "$PATHOF/ThirdParty-1.6.x"
   git clone http://repo.or.cz/r/OpenFOAM-1.6.x.git
   OpenFOAM_git_error=$?
-  
+
   continue_after_failed_openfoam_git
 }
 
@@ -1099,13 +1099,13 @@ function apply_patches_fixes()
   cd_openfoam #this is a precautionary measure
 
   #FIXES ------
-  
+
   #fix links to proper libraries for gcc, as long as the OpenFOAM's precompiled version is used
   isleftlarger_or_equal $version 9.10
   if [ x"$?" == x"1" -a "x$USE_OF_GCC" == "xYes" ]; then
     link_gcc433_libraries_to_system
   fi
-  
+
   #fix ParaView's help file reference, for when ParaView isn't built
   if [ "x$BUILD_PARAVIEW" != "xYes" ]; then
     cd_openfoam
@@ -1137,14 +1137,14 @@ function apply_patches_fixes()
   if [ "x$USE_OF_GCC" == "xNo" ]; then
     patchSettingsToSystemCompiler
   fi #for using the system's compiler
-  
-  #apply patch for paraFoam, for when the running language 
+
+  #apply patch for paraFoam, for when the running language
   #isn't the standard english!
   issystem_english
   if [ x"$?" != x"1" ]; then
     patchParaFoamScript
   fi
-  
+
   #apply patches for wmake script, MPFR library, makeQt script, makeParaView script and libccmio
   patchWmakeForTimings
   patchMPFRMissingFiles
@@ -1171,7 +1171,7 @@ function setOpenFOAMEnv()
   echo "Activate OpenFOAM environment"
   echo "------------------------------------------------------"
   cd OpenFOAM-1.6.x/
-  . $PATHOF/OpenFOAM-1.6.x/etc/bashrc 
+  . $PATHOF/OpenFOAM-1.6.x/etc/bashrc
 }
 
 #Add OpenFOAM's bashrc entry in $PATHOF/.bashrc
@@ -1220,7 +1220,7 @@ function build_gcc_progress_dialog()
       echo "The build process is going to be logged in the file:"
       echo "  $BUILD_GCC_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $BUILD_GCC_LOG"
       echo "Either way, please wait, this will take a while..."
       echo -e "\nQt started to build at:\n\t$BUILD_GCC_START_TIME\n"
@@ -1254,7 +1254,7 @@ function build_gcc_ctrl_c_triggered()
 function build_openfoam_gcc()
 {
   if [ "x$BUILD_GCC" == "xYes" ]; then
-    
+
     #set up environment, just in case we forget about it!
     if [ "x$WM_PROJECT_DIR" == "x" ]; then
       setOpenFOAMEnv
@@ -1266,20 +1266,20 @@ function build_openfoam_gcc()
     #purge existing gcc
     if [ -e "$BUILD_GCC_ROOT" ]; then
       rm -rf $BUILD_GCC_ROOT
-    fi 
+    fi
 
     if [ "x$BUILD_GCC_STRICT_64BIT" == "xYes" ]; then
       BUILD_GCC_OPTION="--disable-multilib"
     fi
-    
+
     BUILD_GCC_LOG="$WM_THIRD_PARTY_DIR/build_gcc.log"
-    
+
     #set up traps...
     trap build_gcc_ctrl_c_triggered SIGINT SIGQUIT SIGTERM
 
     echo "------------------------------------------------------"
     echo "Build gcc:"
-    
+
     #launch makeGcc asynchronously
     bash -c "time ./$GCCMODED_MAKESCRIPT $BUILD_GCC_OPTION" > "$BUILD_GCC_LOG" 2>&1 &
     BUILD_GCC_PID=$!
@@ -1289,7 +1289,7 @@ function build_openfoam_gcc()
     #track build progress
     percent=0
     build_gcc_progress_dialog
-    
+
     #wait for kill code to change
     clear
     if ! ps -p $BUILD_GCC_PID > /dev/null && [ "x$BUILD_GCC_MUST_KILL" != "x" ]; then
@@ -1298,7 +1298,7 @@ function build_openfoam_gcc()
 
     #clear traps
     trap - SIGINT SIGQUIT SIGTERM
-    
+
     echo "------------------------------------------------------"
     echo "Build gcc-4.3.3:"
     if [ -e "$BUILD_GCC_ROOT/bin/gcc" ]; then
@@ -1306,7 +1306,7 @@ function build_openfoam_gcc()
       echo -e "Building gcc finished successfully at:\n\t`date`"
       echo "gcc is ready to be used."
 
-      #TODO: this won't be necessary if we build cmake too, since then there won't be 
+      #TODO: this won't be necessary if we build cmake too, since then there won't be
       #any more dependencies to the system's libraries!
       if [ "$arch" == "x86_64" -a "x$THIRDPARTY_BIN_CMAKE" != "x" ]; then
         link_gcc433_libraries_to_system
@@ -1320,7 +1320,7 @@ function build_openfoam_gcc()
       BUILD_GCC_FAILED="Yes"
     fi
     echo "------------------------------------------------------"
-    
+
   fi
 }
 
@@ -1341,7 +1341,7 @@ function build_awopenfoam_progress_dialog()
         BUILD_AWOPENFOAM_MAKECOUNT=`grep 'WMAKE timing start' "$BUILD_AWOPENFOAM_LOG" | wc -l`
         nowpercent=`expr $BUILD_AWOPENFOAM_MAKECOUNT \* 100 / $BUILD_AWOPENFOAM_ESTIM_BUILD_COUNT`
       fi
-      
+
       if [ "x$nowpercent" != "x$percent" ]; then
         percent=$nowpercent
         BUILD_AWOPENFOAM_UPDATE_TIME=`date`
@@ -1352,7 +1352,7 @@ function build_awopenfoam_progress_dialog()
       echo "The Allwmake build process is going to be logged in the file:"
       echo "  $BUILD_AWOPENFOAM_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $BUILD_AWOPENFOAM_LOG"
       echo "WARNING: THIS CAN TAKE HOURS..."
       echo -e "\nAllwmake started to build at:\n\t$BUILD_AWOPENFOAM_START_TIME"
@@ -1425,7 +1425,7 @@ function allwmake_openfoam()
   #track build progress
   percent=0
   build_awopenfoam_progress_dialog
-  
+
   #wait for kill code to change
   clear
   if ! ps -p $BUILD_AWOPENFOAM_PID > /dev/null && [ "x$BUILD_AWOPENFOAM_MUST_KILL" != "x" ]; then
@@ -1460,7 +1460,7 @@ function build_awopenfoam_docs_progress_dialog()
         BUILD_AWOPENFOAM_NOWCOUNT=`cat "$BUILD_AWOPENFOAMDOC_LOG" | grep -e "^Parsing file" -e "^Generating code for file" -e "^Generating docs for" -e "^Generating dependency graph for directory" | wc -l`
         nowpercent=`expr $BUILD_AWOPENFOAM_NOWCOUNT \* 100 / $BUILD_AWOPENFOAMDOC_ESTIMCOUNT`
       fi
-      
+
       if [ "x$nowpercent" != "x$percent" ]; then
         percent=$nowpercent
         BUILD_AWOPENFOAM_UPDATE_TIME=`date`
@@ -1472,7 +1472,7 @@ function build_awopenfoam_docs_progress_dialog()
       echo "The Doxygen build process is going to be logged in the file:"
       echo "  $BUILD_AWOPENFOAMDOC_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $BUILD_AWOPENFOAMDOC_LOG"
       echo "WARNING: THIS CAN TAKE HOURS..."
       echo -e "Doxygen started to build OpenFOAM code documentation at:\n\t$BUILD_AWOPENFOAMDOC_START_TIME"
@@ -1538,7 +1538,7 @@ function allwmake_openfoam_docs()
     #track build progress
     percent=0
     build_awopenfoam_docs_progress_dialog
-    
+
     #wait for kill code to change
     clear
     if ! ps -p $BUILD_AWOPENFOAM_PID > /dev/null && [ "x$BUILD_AWOPENFOAM_MUST_KILL" != "x" ]; then
@@ -1565,7 +1565,7 @@ function continue_after_failed_openfoam()
     echo "Although the previous step seems to have failed, do you wish to continue with the remaining steps?"
 
     if [ "x$BUILD_DOCUMENTATION" != "x" -o "x$BUILD_CCM26TOFOAM" == "xYes" -o \
-         "x$BUILD_PARAVIEW" == "xYes" -o "x$BUILD_QT" == "xYes" ]; then 
+         "x$BUILD_PARAVIEW" == "xYes" -o "x$BUILD_QT" == "xYes" ]; then
       echo "Missing steps are:"
       if [ "x$BUILD_DOCUMENTATION" != "x" ]; then echo "- Building OpenFOAM's code documentation"; fi
       if [ "x$BUILD_QT" == "xYes" ]; then echo "- Building Qt"; fi
@@ -1638,7 +1638,7 @@ function check_installation()
         ;;
     esac
     unset casestat
-    
+
     continue_after_failed_openfoam
   fi
   unset IFERRORSDETECTED
@@ -1689,7 +1689,7 @@ function final_messages_for_clean_install()
       echo "To start using OpenFOAM, you'll have to start a new terminal first."
       echo "------------------------------------------------------"
     fi
-  
+
   else
 
     echo "Installation failed. Please don't forget to check the provided forum link for solutions on the provided link, and/or report the error."
@@ -1711,13 +1711,13 @@ function OpenFOAM_git_pull()
   fi
 
   cd $WM_PROJECT_DIR
-  
+
   echo "------------------------------------------------------"
   echo "Let's do a git pull"
   echo "------------------------------------------------------"
   git pull
   OpenFOAM_git_error=$?
-  
+
   continue_after_failed_openfoam_git
 }
 
@@ -1730,7 +1730,7 @@ function build_Qt_progress_dialog()
     killgroup $BUILD_QT_PID
 
   else
-    
+
     ( #while true is used as a containment cycle...
     while true;
     do
@@ -1748,7 +1748,7 @@ function build_Qt_progress_dialog()
       echo "The build process is going to be logged in the file:"
       echo "  $BUILD_QT_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $BUILD_QT_LOG"
       echo "Either way, please wait, this will take a while..."
       echo -e "\nQt started to build at:\n\t$BUILD_QT_START_TIME\n"
@@ -1793,7 +1793,7 @@ function build_Qt()
     #purge existing Qt
     if [ -e "$QT_PLATFORM_PATH" ]; then
       rm -rf $QT_PLATFORM_PATH
-    fi 
+    fi
 
     BUILD_QT_LOG="$WM_THIRD_PARTY_DIR/build_Qt.log"
 
@@ -1802,7 +1802,7 @@ function build_Qt()
 
     echo "------------------------------------------------------"
     echo "Build Qt:"
-    
+
     #launch makeQt asynchronously
     bash -c "time ./makeQt --confirm-license=yes" > "$BUILD_QT_LOG" 2>&1 &
     BUILD_QT_PID=$!
@@ -1812,7 +1812,7 @@ function build_Qt()
     #track build progress
     percent=0
     build_Qt_progress_dialog
-    
+
     #wait for kill code to change
     clear
     if ! ps -p $BUILD_QT_PID > /dev/null && [ "x$BUILD_QT_MUST_KILL" != "x" ]; then
@@ -1821,7 +1821,7 @@ function build_Qt()
 
     #clear traps
     trap - SIGINT SIGQUIT SIGTERM
-    
+
     echo "------------------------------------------------------"
     echo "Build Qt ${QT_VERSION}:"
     if [ -e "$QT_PLATFORM_PATH/bin/qmake" ]; then
@@ -1861,7 +1861,7 @@ function build_ParaView_progress_dialog()
         percent=$BUILD_PARAVIEW_PROGRESS
         BUILD_PARAVIEW_UPDATE_TIME=`date`
       fi
-      
+
       #get current build stage
       BUILD_PARAVIEW_ISNOWATDOC=`cat "$PARAVIEW_BUILD_LOG" | grep "Creating html documentation" | wc -l`
       BUILD_PARAVIEW_ISNOWFINALIZING=`cat "$PARAVIEW_BUILD_LOG" | grep "Replacing path hard links for" | wc -l`
@@ -1872,18 +1872,18 @@ function build_ParaView_progress_dialog()
       echo "The build process is going to be logged in the file:"
       echo "  $PARAVIEW_BUILD_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $PARAVIEW_BUILD_LOG"
       echo "Either way, please wait, this will take a while..."
       echo -e "\nParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
       echo -e "Last progress update made at:\n\t$BUILD_PARAVIEW_UPDATE_TIME\n"
-      
+
       if [ "x$BUILD_PARAVIEW_ISNOWATDOC" != "x0" -a "x$BUILD_PARAVIEW_ISNOWFINALIZING" == "x0" ]; then
         echo "Building HTML documentation for ParaView..."
       elif [ "x$BUILD_PARAVIEW_ISNOWFINALIZING" != "x0" ]; then
         echo "Finalizing... almost complete..."
       fi
-      
+
       echo "XXX"
 
       #this provides a better monitorization of the process itself... i.e., if it has already stopped!
@@ -1923,7 +1923,7 @@ function hookup_Qt_Libs_with_ParaView()
 function build_ParaView()
 {
   if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
-    
+
     if [ "x$BUILD_QT" == "xYes" -a "x$BUILDING_QT_FAILED" == "xYes" ]; then
 
       echo "------------------------------------------------------"
@@ -1942,7 +1942,7 @@ function build_ParaView()
       #purge existing ParaView
       if [ -e "$ParaView_DIR" ]; then
         rm -rf $ParaView_DIR
-      fi 
+      fi
 
       PARAVIEW_BUILD_OPTIONS=""
       if [ "x$BUILD_QT" == "xYes" ]; then
@@ -1978,7 +1978,7 @@ function build_ParaView()
       BUILD_PARAVIEW_PID=$!
       BUILD_PARAVIEW_START_TIME=`date`
       BUILD_PARAVIEW_UPDATE_TIME=$BUILD_PARAVIEW_START_TIME
-      
+
       #track build progress
       percent=0
       build_ParaView_progress_dialog
@@ -1998,7 +1998,7 @@ function build_ParaView()
 
         #this will make links in ParaView's bin folder to the custom build of Qt's libraries
         hookup_Qt_Libs_with_ParaView
-        
+
         echo -e "ParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
         echo -e "Building ParaView finished successfully at:\n\t`date`"
         echo "ParaView is ready to use."
@@ -2033,7 +2033,7 @@ function build_ParaView()
 function build_PV3FoamReader()
 {
   if [ "x$BUILD_PARAVIEW" == "xYes" ]; then
-    
+
     #set up environment, just in case we forget about it!
     if [ "x$WM_PROJECT_DIR" == "x" ]; then
       setOpenFOAMEnv
@@ -2046,17 +2046,17 @@ function build_PV3FoamReader()
       echo "------------------------------------------------------"
 
     elif [ ! -e "$ParaView_DIR/bin/paraview" ]; then
-      
+
       echo "------------------------------------------------------"
       echo "ParaView isn't available where it is expected:"
       echo "  $ParaView_DIR/bin/paraview"
       echo "Therefore it isn't possible to proceed with building the plugin PV3FoamReader."
       echo "------------------------------------------------------"
-      
+
     else
 
       cd "$FOAM_UTILITIES/postProcessing/graphics/PV3FoamReader"
-      
+
       PV3FOAMREADER_BUILD_LOG="$WM_PROJECT_DIR/build_PV3FoamReader.log"
 
       echo "------------------------------------------------------"
@@ -2064,7 +2064,7 @@ function build_PV3FoamReader()
       echo "The build process is going to be logged in the file:"
       echo "  $PV3FOAMREADER_BUILD_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $PV3FOAMREADER_BUILD_LOG"
       echo "Either way, please wait, this will take a while..."
 
@@ -2092,7 +2092,7 @@ function build_PV3FoamReader()
 
 function build_ccm26ToFoam()
 {
-  
+
   if [ "x$BUILD_CCM26TOFOAM" == "xYes" ]; then
     #set up environment, just in case we forget about it!
     if [ "x$WM_PROJECT_DIR" == "x" ]; then
@@ -2110,7 +2110,7 @@ function build_ccm26ToFoam()
     echo "The build process is going to be logged in the file:"
     echo "  $BUILD_CCM26TOFOAM_LOG"
     echo "If you want to, you can follow the progress of this build"
-    echo "process, by opening a new terminal and running:"
+    echo "process by opening a new terminal and running:"
     echo "  tail -F $BUILD_CCM26TOFOAM_LOG"
     echo "Either way, please wait, this will take a while..."
 
@@ -2165,7 +2165,7 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 while : ; do
   PATHOF=$(dialog --stdout \
   --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
-  --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM ) 
+  --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM )
 
   if [ x"$?" == x"0" ]; then
     break;
@@ -2195,7 +2195,7 @@ while : ; do
   --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
   --radiolist 'Choose the Install Mode: < default: fresh >' 11 50 4 \
   'fresh'   'Make new Install' on \
-  'update'   'Update currenty install'  off \
+  'update'   'Update current install'  off \
   'server'   'ParaView with: -GUI +MPI'  off \
   'custom'   'Use this only after installation'  off )
 
@@ -2351,7 +2351,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
         BUILD_PARAVIEW_WITH_MPI=Yes
         dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
         --title "Server Install settings" \
-        --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70  
+        --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70
     fi
 
     #verifying ParaView Build options, just in case
@@ -2385,7 +2385,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
         --checklist "Choose Install settings: < Space to select ! >" 10 60 2 \
         1 "Build GCC? (otherwise use pre-compiled version)" off \
         2 "Build GCC in 64bit mode only?" off )
-        
+
         if [ x"$?" == x"0" ]; then
           break;
         else
@@ -2394,12 +2394,12 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       done
 
     elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
-      while : ; do  
+      while : ; do
         GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
         --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
         --checklist "Choose Install settings: < Space to select ! >" 10 60 1 \
         1 "Build GCC? (otherwise use pre-compiled version)" off )
-        
+
         if [ x"$?" == x"0" ]; then
           break;
         else
@@ -2438,7 +2438,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     puzzle 'Switzerland' \
     kent 'UK' \
     internap 'US' )
-    
+
     if [ x"$?" == x"0" ]; then
       break;
     else
@@ -2486,7 +2486,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     done
     ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
         --title "Mirror selector" --gauge "Starting..." 20 60 $percent
-    
+
     # due to the sub-shell execution, have to get again the mirror's name
     mirror=`grep "picked:" tempmirror.log | cut -c20-`
     rm -f tempmirror.log
@@ -2508,7 +2508,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 |             Use OpenFOAM gcc ? $USE_OF_GCC\n
 -------------------------------------------------------------------------\n
 !For more info see documentation on code.google.com/p/openfoam-ubuntu" 15 80)
-    
+
     if [ x"$?" == x"0" ]; then
       break;
     else
@@ -2545,10 +2545,10 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 
   #Download necessary files
   download_files
-  
+
   #Unpack downloaded files
   unpack_downloaded_files
-  
+
   #process our timming log, in order to provide progress and estimated timings
   process_online_log_of_timings
 
@@ -2581,7 +2581,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 
       #do an Allwmake on OpenFOAM 1.6.x
       allwmake_openfoam
-      
+
       #check if the installation is complete
       check_installation
 
@@ -2589,22 +2589,22 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 
     #Continue with the next steps, only if it's OK to continue!
     if [ "x$FOAMINSTALLFAILED" == "x" -o "x$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
-      
+
       #build Doxygen documentation of the code
       allwmake_openfoam_docs
 
       #build Qt
       build_Qt
-      
+
       #build ParaView
       build_ParaView
-      
+
       #build the PV3FoamReader plugin
       build_PV3FoamReader
-      
+
       #build ccm26ToFoam
       build_ccm26ToFoam
-      
+
     fi
   fi
 
@@ -2629,7 +2629,7 @@ fi
 set +e
 
 if [ "x$FOAMINSTALLFAILED" == "x" -o "x$FOAMINSTALLFAILED_BUTCONT" == "xYes" ]; then
-  # NOTE: run bash instead of exit, so the OpenFOAM environment stays operational on 
+  # NOTE: run bash instead of exit, so the OpenFOAM environment stays operational on
   #the calling terminal.
   cd_openfoam
   #calling bash from here seems to be a bad idea... doesn't seem to work properly...
