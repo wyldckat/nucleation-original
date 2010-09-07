@@ -2024,7 +2024,7 @@ function build_ccm26ToFoam()
     echo "The build process is going to be logged in the file:"
     echo "  $BUILD_CCM26TOFOAM_LOG"
     echo "If you want to, you can follow the progress of this build"
-    echo "process, by opening a new terminal and running:"
+    echo "process by opening a new terminal and running:"
     echo "  tail -F $BUILD_CCM26TOFOAM_LOG"
     echo "Either way, please wait, this will take a while..."
 
