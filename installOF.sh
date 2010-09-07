@@ -517,36 +517,16 @@ function patchParaFoamSys()
 
   #add system paraview to path
   if [ "x$USE_REPO_PV" == "xYes" ]; then
-echo '--- orig/'$PFOAM_PATCHFILE'	2010-09-05 20:31:18.808716075 +0200
-+++ ./'$PFOAM_PATCHFILE'	2010-09-05 20:31:08.279513400 +0200
-@@ -52,6 +52,10 @@
-    PRECISION="$(cat system/controlDict | grep 'timePrecision' | awk '{print $2}')"
- }
- 
-+#injected here by the installer
-+export Paraview_VERSION=
-+PV_EXE=/usr/bin/paraview
-+
- # get a sensible caseName
- caseName=${PWD##*/}
-' | patch -p0
+      echo 'patching paraFoamSys to use repository PV'
+      cat './'$PFOAM_PATCHFILE | sed 's/PV_EXE=/PV_EXE=\/usr\/bin\/paraview/' > sed.out
+      mv 'sed.out' $PFOAM_PATCHFILE
   fi
 
   #add kitware paraview to path
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then     
-echo '--- paraFoamSys	2010-09-05 20:31:18.808716075 +0200
-+++ paraFoamSys2	2010-09-05 20:31:08.279513400 +0200
-@@ -52,6 +52,10 @@
-    PRECISION="$(cat system/controlDict | grep 'timePrecision' | awk '{print $2}')"
- }
- 
-+#injected here by the installer
-+export Paraview_VERSION=
-+PV_EXE='$PATHOF'/ThirdParty-1.6/'$KV_PV_DIR'/bin/paraview
-+
- # get a sensible caseName
- caseName=${PWD##*/}
-' | patch -p0
+      echo 'patching paraFoamSys to use kitware PV'
+      cat './'$PFOAM_PATCHFILE | sed 's/PV_EXE=/PV_EXE='$PATHOF'\/ThirdParty-1.6\/'$KV_PV_DIR'\/bin\/paraview/' > sed.out
+      mv 'sed.out' $PFOAM_PATCHFILE
   fi
 
   #check paraview version
@@ -570,7 +550,7 @@ echo '--- paraFoamSys	2010-09-05 20:31:18.808716075 +0200
   if [ "x$Paraview_VERSION" == "x" ]; then
       echo "Paraview version could not be determined!"
   else
-      cat './'$PFOAM_PATCHFILE | sed 's/export Paraview_VERSION=/export Paraview_VERSION=$Paraview_VERSION/' > sed.out
+      cat './'$PFOAM_PATCHFILE | sed 's/export Paraview_VERSION=/export Paraview_VERSION='$Paraview_VERSION'/' > sed.out
       mv 'sed.out' $PFOAM_PATCHFILE
   fi
 
@@ -2129,7 +2109,7 @@ while : ; do
   --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
   --radiolist 'Choose the Install Mode: < default: fresh >' 10 50 3 \
   'fresh' 'Make new Install' on  \
-  'update'   'Update currenty install'           off \
+  'update'   'Update current install'           off \
   'server'    'ParaView with: -GUI +MPI'    off )
 
   if [ x"$?" == x"0" ]; then
@@ -2145,7 +2125,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   while : ; do
     SETTINGSOPTS=$(dialog --stdout --separate-output \
     --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
-    --checklist "Choose Install settings: < Space to select ! >" 15 50 7 \
+    --checklist "Choose Install settings: < Space to select ! >" 15 60 7 \
     1 "Do apt-get upgrade" off \
     2 "Build OpenFOAM docs" off \
     3 "Use startFoam alias" on \

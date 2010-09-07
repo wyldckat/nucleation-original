@@ -33,13 +33,17 @@
 #------------------------------------------------------------------------------
 Script=${0##*/}
 
+#injected here by the installer
+export Paraview_VERSION=
+PV_EXE=
+
 usage() {
    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
    cat<<USAGE
 
 usage: $Script [-case dir] [-time time] [-latestTime] [-data vtkFile] [-clean]
 
-* start $PV_EXE $ParaView_VERSION with the OpenFOAM libraries
+* start paraview $ParaView_VERSION with the OpenFOAM libraries
 * default action will be to load an entire dataset
 * clean option will remove VTK directory!
 * script will only accept one option at a time
@@ -84,7 +88,7 @@ if [ "$#" -gt 0 ]; then
       rm f2vtk.log
       echo "time: ${caseTime}, data: ${caseData}"
       cd VTK/
-      echo "paraview --data=$caseData"
+      echo "$PV_EXE --data=$caseData"
       $PV_EXE --data=$caseData
       exit
       ;;
@@ -98,7 +102,7 @@ if [ "$#" -gt 0 ]; then
       #rm f2vtk.log
       echo "time: ${caseTime}, data: ${caseData}"
       cd VTK/
-      echo "paraview --data=$caseData"
+      echo "$PV_EXE --data=$caseData"
       $PV_EXE --data=$caseData
       exit
       ;;
@@ -120,7 +124,7 @@ if [ "$#" -gt 0 ]; then
    esac
 fi
 
-# $PV_EXE = 3.8? -> use native OFreader in 3.8
+# paraview = 3.8? -> use native OFreader in 3.8
 if [ "x$Paraview_VERSION" == "x3.8" ]; then
     caseFile="$caseName.foam"
 
