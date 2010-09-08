@@ -1140,10 +1140,11 @@ function apply_patches_fixes()
     #First move paraFoamSys to OpenFOAM's bin folder
     cd_openfoam
     mv $PFOAM_PATCHFILE OpenFOAM-1.6.x/bin/
-    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
 
     #Now patch it up
     patchParaFoamSys
+
+    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
   fi
 }
 
