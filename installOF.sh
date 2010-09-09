@@ -536,7 +536,7 @@ function patchParaFoamSys()
     ./paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
     cd_openfoam
     cd OpenFOAM-1.6.x/bin/
-  elif [ "x$USE_KITWARE_PV" == "xYes" ]; then
+  elif [ "x$USE_REPO_PV" == "xYes" ]; then
     /usr/bin/paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
     cd_openfoam
     cd OpenFOAM-1.6.x/bin/
