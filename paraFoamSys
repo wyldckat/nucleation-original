@@ -72,8 +72,8 @@ if [ "$#" -gt 0 ]; then
       cd "$caseDir" 2>/dev/null || usage "directory does not exist:  '$caseDir'"
       echo "foamToVTK"
       foamToVTK
-      echo "$PV_EXE "--data=VTK/$caseDir..vtk""
-      $PV_EXE --data=VTK/$caseDir..vtk
+      echo "$PV_EXE "--data=VTK/${caseDir}_..vtk""
+      $PV_EXE --data=VTK/${caseDir}_..vtk
       exit
       ;;
    -time)
@@ -138,6 +138,6 @@ fi
 # in case of no arguments just convert all data to VTK
 echo "foamToVTK"
 foamToVTK
-echo "$PV_EXE "--data=VTK/$caseName..vtk""
-$PV_EXE "--data=VTK/$caseName..vtk"
+echo "$PV_EXE "--data=VTK/${caseName}_..vtk""
+$PV_EXE "--data=VTK/${caseName}_..vtk"
 
