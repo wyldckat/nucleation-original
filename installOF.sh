@@ -525,7 +525,10 @@ function patchParaFoamSys()
   #add kitware paraview to path
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then     
       echo 'patching paraFoamSys to use kitware PV'
-      cat './'$PFOAM_PATCHFILE | sed 's/PV_EXE=/PV_EXE='$PATHOF'\/ThirdParty-1.6\/'$KV_PV_DIR'\/bin\/paraview/' > sed.out
+      #escape pathof
+      ESC_PATHOF=`echo $PATHOF | sed 's/\//\\\\\//g' `
+      ESC_KV_PV_DIR=`echo $KV_PV_DIR | sed 's/\//\\\\\//g' `
+      cat './'$PFOAM_PATCHFILE | sed 's/PV_EXE=/PV_EXE='$ESC_PATHOF'\/ThirdParty-1.6\/'$ESC_KV_PV_DIR'\/bin\/paraview/' > sed.out
       mv 'sed.out' $PFOAM_PATCHFILE
   fi
 
