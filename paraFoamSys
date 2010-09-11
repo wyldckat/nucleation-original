@@ -28,7 +28,7 @@
 #
 # Description
 #     This script is part of the OpenFoam installer
-#     It will enable you to view OpenFoam results with the system $PV_EXE
+#     It will enable you to view OpenFoam results with the system paraview
 #
 #------------------------------------------------------------------------------
 Script=${0##*/}
@@ -59,7 +59,7 @@ getPrecision() {
 # get a sensible caseName
 caseName=${PWD##*/}
 
-# parse options -> $PV_EXE versions other than 3.8
+# parse options -> paraview versions other than 3.8
 if [ "$#" -gt 0 ]; then
    case "$1" in
    -h | -help)
@@ -72,8 +72,8 @@ if [ "$#" -gt 0 ]; then
       cd "$caseDir" 2>/dev/null || usage "directory does not exist:  '$caseDir'"
       echo "foamToVTK"
       foamToVTK
-      echo "$PV_EXE "--data=VTK/$caseDir..vtk""
-      $PV_EXE --data=VTK/$caseDir..vtk
+      echo "$PV_EXE "--data=VTK/${caseDir}_..vtk""
+      $PV_EXE --data=VTK/${caseDir}_..vtk
       exit
       ;;
    -time)
@@ -138,6 +138,6 @@ fi
 # in case of no arguments just convert all data to VTK
 echo "foamToVTK"
 foamToVTK
-echo "$PV_EXE "--data=VTK/$caseName..vtk""
-$PV_EXE "--data=VTK/$caseName..vtk"
+echo "$PV_EXE "--data=VTK/${caseName}_..vtk""
+$PV_EXE "--data=VTK/${caseName}_..vtk"
 

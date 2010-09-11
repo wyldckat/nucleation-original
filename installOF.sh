@@ -525,7 +525,10 @@ function patchParaFoamSys()
   #add kitware paraview to path
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then     
       echo 'patching paraFoamSys to use kitware PV'
-      cat './'$PFOAM_PATCHFILE | sed 's/PV_EXE=/PV_EXE='$PATHOF'\/ThirdParty-1.6\/'$KV_PV_DIR'\/bin\/paraview/' > sed.out
+      #escape pathof
+      ESC_PATHOF=`echo $PATHOF | sed 's/\//\\\\\//g' `
+      ESC_KV_PV_DIR=`echo $KV_PV_DIR | sed 's/\//\\\\\//g' `
+      cat './'$PFOAM_PATCHFILE | sed 's/PV_EXE=/PV_EXE='$ESC_PATHOF'\/ThirdParty-1.6\/'$ESC_KV_PV_DIR'\/bin\/paraview/' > sed.out
       mv 'sed.out' $PFOAM_PATCHFILE
   fi
 
@@ -536,7 +539,7 @@ function patchParaFoamSys()
     ./paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
     cd_openfoam
     cd OpenFOAM-1.6.x/bin/
-  elif [ "x$USE_KITWARE_PV" == "xYes" ]; then
+  elif [ "x$USE_REPO_PV" == "xYes" ]; then
     /usr/bin/paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
     cd_openfoam
     cd OpenFOAM-1.6.x/bin/
@@ -1140,10 +1143,11 @@ function apply_patches_fixes()
     #First move paraFoamSys to OpenFOAM's bin folder
     cd_openfoam
     mv $PFOAM_PATCHFILE OpenFOAM-1.6.x/bin/
-    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
 
     #Now patch it up
     patchParaFoamSys
+
+    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
   fi
 }
 
@@ -1342,13 +1346,13 @@ function build_awopenfoam_progress_dialog()
         echo "The Allwmake build process is going to be logged in the file:"
         echo "  $BUILD_AWOPENFOAM_LOG"
         echo "If you want to, you can follow the progress of this build"
-        echo "process, by opening a new terminal and running:"
+        echo "process by opening a new terminal and running:"
         echo "  tail -F $BUILD_AWOPENFOAM_LOG"
       else
         echo "The Doxygen build process is going to be logged in the file:"
         echo "  $BUILD_AWOPENFOAMDOC_LOG"
         echo "If you want to, you can follow the progress of this build"
-        echo "process, by opening a new terminal and running:"
+        echo "process by opening a new terminal and running:"
         echo "  tail -F $BUILD_AWOPENFOAMDOC_LOG"
       fi
       echo "WARNING: THIS CAN TAKE HOURS..."
@@ -1662,7 +1666,7 @@ function build_Qt_progress_dialog()
       echo "The build process is going to be logged in the file:"
       echo "  $BUILD_QT_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $BUILD_QT_LOG"
       echo "Either way, please wait, this will take a while..."
       echo -e "\nQt started to build at:\n\t$BUILD_QT_START_TIME\n"
@@ -1786,7 +1790,7 @@ function build_ParaView_progress_dialog()
       echo "The build process is going to be logged in the file:"
       echo "  $PARAVIEW_BUILD_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $PARAVIEW_BUILD_LOG"
       echo "Either way, please wait, this will take a while..."
       echo -e "\nParaView started to build at:\n\t$BUILD_PARAVIEW_START_TIME\n"
@@ -1978,7 +1982,7 @@ function build_PV3FoamReader()
       echo "The build process is going to be logged in the file:"
       echo "  $PV3FOAMREADER_BUILD_LOG"
       echo "If you want to, you can follow the progress of this build"
-      echo "process, by opening a new terminal and running:"
+      echo "process by opening a new terminal and running:"
       echo "  tail -F $PV3FOAMREADER_BUILD_LOG"
       echo "Either way, please wait, this will take a while..."
 
@@ -2024,7 +2028,7 @@ function build_ccm26ToFoam()
     echo "The build process is going to be logged in the file:"
     echo "  $BUILD_CCM26TOFOAM_LOG"
     echo "If you want to, you can follow the progress of this build"
-    echo "process, by opening a new terminal and running:"
+    echo "process by opening a new terminal and running:"
     echo "  tail -F $BUILD_CCM26TOFOAM_LOG"
     echo "Either way, please wait, this will take a while..."
 
