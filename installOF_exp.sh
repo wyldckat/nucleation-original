@@ -517,54 +517,41 @@ function patchParaFoamSys()
   cd_openfoam
   cd OpenFOAM-1.6.x/bin/
 
+  #add system paraview to path
+  if [ "x$USE_REPO_PV" == "xYes" ]; then
+      echo 'patching paraFoamSys to use repository PV'
+      sed -i -e 's/PV_EXE=/PV_EXE=\/usr\/bin\/paraview/' "./${PFOAM_PATCHFILE}"
+  fi
+
   #add kitware paraview to path
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then
-echo '--- orig/'$PFOAM_PATCHFILE'  2010-08-28 11:35:05.000000000 +0100
-+++ ./'$PFOAM_PATCHFILE' 2010-08-29 13:10:41.000000000 +0100
-@@ -33,6 +33,8 @@
- #------------------------------------------------------------------------------
- Script=${0##*/}
-
-+export PATH='$PATHOF'/ThirdParty-1.6/'$KV_PV_DIR'/bin:$PATH
-+
- usage() {
-    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
-    cat<<USAGE
-' | patch -p0
+      echo 'patching paraFoamSys to use kitware PV'
+      #escape pathof
+      ESC_PATHOF=`echo $PATHOF | sed 's/\//\\\\\//g' `
+      ESC_KV_PV_DIR=`echo $KV_PV_DIR | sed 's/\//\\\\\//g' `
+      sed -i -e 's/PV_EXE=/PV_EXE='$ESC_PATHOF'\/ThirdParty-1.6\/'$ESC_KV_PV_DIR'\/bin\/paraview/' "./${PFOAM_PATCHFILE}"
   fi
 
   #check paraview version
   #PV writes version string to stderr...
   if [ "x$USE_KITWARE_PV" == "xYes" ]; then
     cd $PATHOF/ThirdParty-1.6/$KV_PV_DIR/bin
-    ./paraview -V 2> $PATHOF/OpenFOAM-1.6.x/bin/pv.log
+    Paraview_VERSION="$(./paraview -V 2>&1 | awk -F'View' '{print $2}')"
+    cd_openfoam
+    cd OpenFOAM-1.6.x/bin/
+  elif [ "x$USE_REPO_PV" == "xYes" ]; then
+    Paraview_VERSION="$(/usr/bin/paraview -V 2>&1 | awk -F'View' '{print $2}')"
     cd_openfoam
     cd OpenFOAM-1.6.x/bin/
   else
-    paraview -V 2> pv.log
+    Paraview_VERSION="$(paraview -V 2>&1 | awk -F'View' '{print $2}')"
   fi
 
-  Paraview_VERSION="$(cat pv.log | awk -F'View' '{print $2}')"
-  rm pv.log
   #include version variable in .bashrc so we can use this in paraFoamSys
   if [ "x$Paraview_VERSION" == "x" ]; then
       echo "Paraview version could not be determined!"
   else
-
-echo '--- orig/'$PFOAM_PATCHFILE'  2010-08-28 11:35:05.000000000 +0100
-+++ ./'$PFOAM_PATCHFILE' 2010-08-29 13:10:41.000000000 +0100
-@@ -56,6 +58,9 @@
-    PRECISION="$(cat system/controlDict | grep '"'"'timePrecision'"'"' | awk '"'"'{print $2}'"'"')"
- }
-
-+#injected here by the installer
-+export Paraview_VERSION='$Paraview_VERSION'
-+
- # get a sensible caseName
- caseName=${PWD##*/}
-
-' | patch -p0
-
+      sed -i -e 's/export Paraview_VERSION=/export Paraview_VERSION='$Paraview_VERSION'/' "./${PFOAM_PATCHFILE}"
   fi
 
   cd $tmpVar
@@ -1114,8 +1101,7 @@ function apply_patches_fixes()
     elif [ "$arch" == "x86_64" ]; then
       cd ThirdParty-1.6/paraview-3.6.1/platforms/linux64Gcc/bin
     fi
-    mv pqClientDocFinder.txt pqClientDocFinder_orig.txt
-    cat pqClientDocFinder_orig.txt | sed -e 's=/home/dm2/henry/OpenFOAM='${PATHOF}'=' > ./pqClientDocFinder.txt
+    sed -i -e 's=/home/dm2/henry/OpenFOAM='${PATHOF}'=' pqClientDocFinder.txt
   fi
 
   cd_openfoam #this is a precautionary measure
@@ -1153,13 +1139,14 @@ function apply_patches_fixes()
   patchAllwmakeLibccmioScript
 
   if [ "x$USE_REPO_PV" == "xYes" -o "x$USE_KITWARE_PV" == "xYes" ]; then
-    #First copy paraFoamSys to OpenFOAM's bin folder
+    #First move paraFoamSys to OpenFOAM's bin folder
     cd_openfoam
-    cp $PFOAM_PATCHFILE OpenFOAM-1.6.x/bin/
-    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
+    mv $PFOAM_PATCHFILE OpenFOAM-1.6.x/bin/
 
     #Now patch it up
     patchParaFoamSys
+
+    chmod +x OpenFOAM-1.6.x/bin/$PFOAM_PATCHFILE
   fi
 }
 
@@ -1662,9 +1649,7 @@ function fix_tutorials()
     find $FOAM_TUTORIALS/ -name "All*" | \
     while read file
     do
-        mv "$file" "$file.old"
-        sed '/^#!/ s/\/bin\/sh/\/bin\/bash/' "$file.old" > "$file"
-        rm -f "$file.old"
+        sed -i -e '/^#!/ s/\/bin\/sh/\/bin\/bash/' "$file"
     done
     echo "Fix up bash done"
     echo "------------------------------------------------------"

@@ -7,7 +7,8 @@
 #    \\/     M anipulation  |
 #-------------------------------------------------------------------------------
 # License
-#     This file is part of OpenFOAM.
+#     This file is part of the openfoam-ubuntu project for OpenFOAM. It is an
+#     unofficial script.
 #
 #     OpenFOAM is free software; you can redistribute it and/or modify it
 #     under the terms of the GNU General Public License as published by the
@@ -36,6 +37,11 @@ Script=${0##*/}
 #injected here by the installer
 export Paraview_VERSION=
 PV_EXE=
+
+#neutralize the PATH and LD_LIBRARY_PATH into more general paths, in an attempt to minimize gcc library clashes
+#NOTE: ${PV_EXE%/*} is the folder where paraview is, as long as the full path is given in PV_EXE
+export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:${PV_EXE%/*}
+export LD_LIBRARY_PATH=${PV_EXE%/*}
 
 usage() {
    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
