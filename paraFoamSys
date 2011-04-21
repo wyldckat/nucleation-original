@@ -7,7 +7,7 @@
 #    \\/     M anipulation  |
 #-------------------------------------------------------------------------------
 # License
-#     This file is part of the openfoam-ubuntu project for OpenFOAM. It is an
+#     This file is part of the nucleation project for OpenFOAM. It is an
 #     unofficial script.
 #
 #     OpenFOAM is free software; you can redistribute it and/or modify it
@@ -28,7 +28,7 @@
 #     paraFoam
 #
 # Description
-#     This script is part of the OpenFoam installer
+#     This script is part of the installer from nucleation project for OpenFOAM.
 #     It will enable you to view OpenFoam results with the system paraview
 #
 #------------------------------------------------------------------------------

@@ -6,7 +6,7 @@
 #
 # THIS SCRIPT IS UNDER GPLv3 LICENSE
 # See script home at:
-# http://code.google.com/p/openfoam-ubuntu
+# http://code.google.com/p/nucleation
 #
 # Several people have contributed for this project on http://www.cfd-online.com
 #-----------------------TODOS--------------------------------------
@@ -179,7 +179,7 @@ function save_running_pids()
 
 function cancel_installer()
 {
-    dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
 --title "Cancel the Installer" \
 --yesno 'Are you sure that you want to cancel the installer ??' 5 60 ;
     if [ x"$?" == x"0" ]; then
@@ -625,7 +625,7 @@ function install_dialog_package()
 function define_packages_to_download()
 {
   #This script's repository
-  OPENFOAM_UBUNTU_SCRIPT_REPO="http://openfoam-ubuntu.googlecode.com/hg/"
+  OPENFOAM_UBUNTU_SCRIPT_REPO="http://nucleation.googlecode.com/hg/"
 
   #OpenFOAM's sourceforge repository
   OPENFOAM_SOURCEFORGE="http://downloads.sourceforge.net/foam/"
@@ -1222,7 +1222,7 @@ function build_gcc_progress_dialog()
         break;
       fi
     done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
         --title "Building gcc" --gauge "Starting..." 20 80 $percent
   fi
 
@@ -1360,7 +1360,7 @@ function build_awopenfoam_progress_dialog()
         break;
       fi
     done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
         --title "Building OpenFOAM" --gauge "Starting..." 20 80 $percent
   fi
 
@@ -1474,7 +1474,7 @@ function build_awopenfoam_docs_progress_dialog()
         break;
       fi
     done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
         --title "Building OpenFOAM" --gauge "Starting..." 24 80 $percent
   fi
 
@@ -1748,7 +1748,7 @@ function build_Qt_progress_dialog()
         break;
       fi
     done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
         --title "Building Qt" --gauge "Starting..." 20 80 $percent
 
   fi
@@ -1879,7 +1879,7 @@ function build_ParaView_progress_dialog()
         break;
       fi
     done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
         --title "Building ParaView" --gauge "Starting..." 20 80 $percent
 
   fi
@@ -2141,7 +2141,7 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 | =========              |\n
 | \\      / F ield        | OpenFOAM-1.6.x Installer for Ubuntu\n
 |  \\    /  O peration    | Licensed under GPLv3\n
-|   \\  /   A nd          | Web: http://code.google.com/p/openfoam-ubuntu\n
+|   \\  /   A nd          | Web: http://code.google.com/p/nucleation\n
 |    \\/    M anipulation | By: Fabio Canesin and Bruno Santos\n
 |                        | Based on original work from Mads Reck\n
 -----------------------------------------------------------------------" 12 80
@@ -2149,7 +2149,7 @@ dialog --title "OpenFOAM-1.6.x Installer for Ubuntu" \
 #Choose path to install OF, default is already set
 while : ; do
   PATHOF=$(dialog --stdout \
-  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
   --inputbox 'Choose the install path: < default: ~/OpenFOAM >' 8 60 ~/OpenFOAM )
 
   if [ x"$?" == x"0" ]; then
@@ -2162,7 +2162,7 @@ done
 #Logging option Dialog
 while : ; do
   LOG_OUTPUTS=$(dialog --stdout \
-  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
   --menu 'Do you want to save a log of the script? < default: Yes >' 0 40 0 \
   'Yes'   '' \
   'No' '' )
@@ -2177,7 +2177,7 @@ done
 #Installation mode dialog
 while : ; do
   INSTALLMODE=$(dialog --stdout \
-  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"    \
+  --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"    \
   --radiolist 'Choose the Install Mode: < default: fresh >' 11 50 4 \
   'fresh'   'Make new Install' on \
   'update'   'Update current install'  off \
@@ -2199,7 +2199,7 @@ if [ "x$INSTALLMODE" == "xcustom" ]; then
 
   while : ; do
     CUSTOMOPTS=$(dialog --stdout --separate-output \
-    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"         \
     --checklist "Build only parts, excluding OpenFOAM: < Space to select ! >" 15 65 2 \
     1 "Build OpenFOAM optionals" off \
     2 "Build ParaView with(out) Qt" off )
@@ -2241,7 +2241,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     #Settings choosing Dialog
     while : ; do
       SETTINGSOPTS=$(dialog --stdout --separate-output \
-      --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+      --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"         \
       --checklist "Choose Install settings: < Space to select ! >" 15 50 7 \
       1 "Do apt-get upgrade" off \
       2 "Build OpenFOAM docs" off \
@@ -2283,7 +2283,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
      ! [ "$INSTALLMODE" == "fresh" -a "$USE_REPO_PV" == "Yes" -o "$USE_KITWARE_PV" == "Yes" ]; then
   while : ; do
       PVSETTINGSOPTS=$(dialog --stdout --separate-output \
-      --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+      --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"         \
       --checklist "Choose ParaView settings: < Space to select ! >" 16 59 6 \
       1 "Do custom build of Qt 4.3.5 ?" off \
       2 "Do custom build of ParaView ?" off \
@@ -2317,7 +2317,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     if [ "$version" == "10.04" -a "x$BUILD_PARAVIEW" != "xYes" ]; then
         BUILD_QT=Yes
         BUILD_PARAVIEW=Yes
-        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
         --title "Non-optional setting detected!" \
         --infobox "You are running Ubuntu $version.\nFor ParaView to work properly this script must do a custom build of Qt, ParaView and PV3FoamReader" 5 70
     fi
@@ -2325,7 +2325,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       if [ "x$BUILD_PARAVIEW" != "Yes" -o "x$BUILD_QT" != "xYes" ]; then
         BUILD_QT=Yes
         BUILD_PARAVIEW=Yes
-        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
         --title "Non-optional setting detected!" \
         --infobox "You are running Ubuntu $version. \nFor ParaView to work properly this script must do a custom build of Qt and also build ParaView." 5 70
       fi
@@ -2334,7 +2334,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
         BUILD_PARAVIEW=Yes
         BUILD_PARAVIEW_WITH_GUI=No
         BUILD_PARAVIEW_WITH_MPI=Yes
-        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
         --title "Server Install settings" \
         --infobox "Installer in server install mode. \n ParaView will be build without GUI and with MPI support" 5 70
     fi
@@ -2344,7 +2344,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       if [ "x$BUILD_PARAVIEW_WITH_MPI" == "xYes" -o "x$BUILD_PARAVIEW_WITH_PYTHON" == "xYes" -o \
           "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" -o "x$BUILD_QT" == "xYes" ]; then
           BUILD_PARAVIEW=Yes
-          dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+          dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
           --title "Non-optional setting detected!" \
           --infobox "\nParaView will need to be built, since the pre-built version isn't enough for the chosen options." 10 70
       fi
@@ -2353,7 +2353,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     if [ "x$BUILD_PARAVIEW" == "xYes" -a "x$BUILD_PARAVIEW_WITH_MPI" == "xNo" -a \
         "x$BUILD_PARAVIEW_WITH_GUI" == "xNo" ]; then
         BUILD_PARAVIEW_WITH_MPI=Yes
-        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+        dialog --sleep 6 --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
         --title "Bad options detected!" \
         --infobox "\nParaView must be built with either MPI or GUI. Since you've defined both Off, will assume server mode and turn on MPI." 10 70
     fi
@@ -2366,7 +2366,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     if [ "$arch" == "x86_64" ]; then
       while : ; do
         GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
-        --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+        --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"         \
         --checklist "Choose Install settings: < Space to select ! >" 10 60 2 \
         1 "Build GCC? (otherwise use pre-compiled version)" off \
         2 "Build GCC in 64bit mode only?" off )
@@ -2381,7 +2381,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     elif [ x`echo $arch | grep -e "i.86"` != "x" ]; then
       while : ; do
         GCCSETTINGSOPTS=$(dialog --stdout --separate-output \
-        --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"         \
+        --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"         \
         --checklist "Choose Install settings: < Space to select ! >" 10 60 1 \
         1 "Build GCC? (otherwise use pre-compiled version)" off )
 
@@ -2411,7 +2411,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
   #Mirror selection dialog
   while : ; do
     mirror=$(dialog --stdout \
-    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu"   \
+    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
     --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
     findClosest 'Autodetect closest' \
     optusnet 'Australia' \
@@ -2469,7 +2469,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
       echo "XXX"
       sleep 1
     done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
         --title "Mirror selector" --gauge "Starting..." 20 60 $percent
 
     # due to the sub-shell execution, have to get again the mirror's name
@@ -2480,7 +2480,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 
   #Show to user the detected settings, last chance to cancel the installer
   while : ; do
-    (dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/openfoam-ubuntu" \
+    (dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
 --title "Final settings - <ESC> to abort the Installer" \
 --msgbox "-------------------------------------------------------------------------\n
 | =========   Detected that you are running: Ubuntu $version - $arch\n
@@ -2492,7 +2492,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 | *settings*  Use startFoam alias ? $USE_ALIAS_FOR_BASHRC\n
 |             Use OpenFOAM gcc ? $USE_OF_GCC\n
 -------------------------------------------------------------------------\n
-!For more info see documentation on code.google.com/p/openfoam-ubuntu" 15 80)
+!For more info see documentation on code.google.com/p/nucleation" 15 80)
 
     if [ x"$?" == x"0" ]; then
       break;
