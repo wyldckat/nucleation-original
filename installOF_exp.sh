@@ -642,11 +642,11 @@ function install_dialog_package()
 function define_packages_to_download()
 {
   #This script's repository
-  OPENFOAM_UBUNTU_SCRIPT_REPO="http://nucleation.googlecode.com/hg/"
+  OPENFOAM_UBUNTU_SCRIPT_REPO="http://original.nucleation.googlecode.com/hg/"
 
   #OpenFOAM's sourceforge repository
   OPENFOAM_SOURCEFORGE="http://downloads.sourceforge.net/foam/"
-  SOURCEFORGE_URL_OPTIONS="?use_mirror=$mirror"
+  SOURCEFORGE_URL_OPTIONS=""
 
   #Third Party files to download
   THIRDPARTY_GENERAL="ThirdParty-1.6.General.gtgz"
@@ -934,7 +934,7 @@ function download_files()
   #No longer needed since OpenFOAM 1.7 was released...
   ##get_md5sums_for_OFpackages
 
-  #Download Third Party files for detected system and selected mirror
+  #Download Third Party files for detected system
   #download Third Party sources
   do_wget_md5sum "$OPENFOAM_SOURCEFORGE" "$THIRDPARTY_GENERAL" "$SOURCEFORGE_URL_OPTIONS" OFpackages.md5
 
@@ -2425,74 +2425,6 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
     LOG_OUTPUTS_FILE_LOCATION=$PWD/installOF.log
   fi
 
-  #Mirror selection dialog
-  while : ; do
-    mirror=$(dialog --stdout \
-    --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation"   \
-    --menu 'Choose your location for mirror selection? < default: autodetect >' 0 40 0 \
-    findClosest 'Autodetect closest' \
-    optusnet 'Australia' \
-    ufpr 'Brazil' \
-    nchc 'China/Taiwan' \
-    mesh 'Germany' \
-    garr 'Italy' \
-    jaist 'Japan' \
-    puzzle 'Switzerland' \
-    kent 'UK' \
-    internap 'US' )
-
-    if [ x"$?" == x"0" ]; then
-      break;
-    else
-      cancel_installer
-    fi
-  done
-
-  #Detect and take care of fastest mirror
-  if [ "x$mirror" == "xfindClosest" ]; then
-    clear
-
-    (
-      echo "Searching for the closest mirror..."
-      echo "It can take from 10s to 90s (estimated)..."
-      echo "--------------------"
-      echo "Warning: This could provide a fake closest!"
-      echo "--------------------"
-      best_time=9999
-      #predefine value to mesh, otherwise it will be stuck in an endless loop!
-      mirrorf=mesh
-      for mirror_tmp in ufpr internap mesh puzzle jaist optusnet kent garr nchc; do
-        timednow=`ping -Aqc 5 -s 120 $mirror_tmp.dl.sourceforge.net | sed -nr 's/.*time\ ([0-9]+)ms.*/\1/p'`
-        echo "$mirror_tmp: $timednow ms"
-        if [ $timednow -lt $best_time ]; then
-          mirrorf=$mirror_tmp
-          best_time=$timednow
-        fi
-      done
-      echo "*---Mirror picked: $mirrorf" ) > tempmirror.log &
-
-    mirror=
-    mirror_total_count=10   # it already includes the mirror picked line!
-    mirror_initial_line_count=5
-    percent=0
-    (
-    while [ "x$mirror" == "x" ] ; do
-      mirror=`grep "picked:" tempmirror.log | cut -c20-`
-      percent=`cat tempmirror.log | wc -l`
-      percent=`expr \( $percent - $mirror_initial_line_count \) \* 100 / $mirror_total_count`
-      echo $percent
-      echo "XXX"
-      echo -e "`cat tempmirror.log`"
-      echo "XXX"
-      sleep 1
-    done
-    ) | dialog --backtitle "OpenFOAM-1.6.x Installer for Ubuntu - code.google.com/p/nucleation" \
-        --title "Mirror selector" --gauge "Starting..." 20 60 $percent
-
-    # due to the sub-shell execution, have to get again the mirror's name
-    mirror=`grep "picked:" tempmirror.log | cut -c20-`
-    rm -f tempmirror.log
-  fi
   clear
 
   #Show to user the detected settings, last chance to cancel the installer
@@ -2501,7 +2433,7 @@ if [ "x$INSTALLMODE" != "xupdate" ]; then
 --title "Final settings - <ESC> to abort the Installer" \
 --msgbox "-------------------------------------------------------------------------\n
 | =========   Detected that you are running: Ubuntu $version - $arch\n
-| \\      /    The choosed mirror is: $mirror\n
+| \\      /    \n
 |  \\    /     Logging: $LOG_OUTPUTS\n
 |   \\  /      Install mode: $INSTALLMODE\n
 |    \\/       Run apt-get upgrade ? $DOUPGRADE\n
